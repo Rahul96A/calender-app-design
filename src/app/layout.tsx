@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["600"] });
 
 export const metadata: Metadata = {
-  title: { default: "Time off · Kargul", template: "%s · Kargul" },
+  title: { default: "Time off · Kargul Workspace", template: "%s · Kargul Workspace" },
   description: "Plan time off, track leave requests and manage your work calendar.",
 };
 

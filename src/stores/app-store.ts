@@ -404,9 +404,11 @@ export const useAppStore = create<AppStore>()(
       skipHydration: true,
       migrate: (persisted, version) => {
         const s = persisted as AppState;
-        // v2: the main workspace was renamed from "Workspace" to "Kargul".
-        if (version < 2) {
-          s.workspaces = s.workspaces.map((w) => (w.id === "ws-main" && w.name === "Workspace" ? { ...w, name: "Kargul" } : w));
+        // v3: the main workspace is "Kargul Workspace" (was "Workspace", then "Kargul").
+        if (version < 3) {
+          s.workspaces = s.workspaces.map((w) =>
+            w.id === "ws-main" && (w.name === "Workspace" || w.name === "Kargul") ? { ...w, name: "Kargul Workspace" } : w,
+          );
         }
         return { ...s, version: STATE_VERSION };
       },
@@ -421,4 +423,4 @@ export const useAppStore = create<AppStore>()(
 
 /** Read-only selector for the active workspace name. */
 export const selectWorkspaceName = (s: AppStore) =>
-  s.workspaces.find((w) => w.id === s.workspaceId)?.name ?? "Kargul";
+  s.workspaces.find((w) => w.id === s.workspaceId)?.name ?? "Kargul Workspace";
