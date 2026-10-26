@@ -42,7 +42,7 @@ function cardBrand(digits: string): string {
 export function AddMethodDialog({ open, session, onClose }: { open: boolean; session: number; onClose: () => void }) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="gap-5 p-5 sm:max-w-[520px]">
+      <DialogContent className="gap-5 p-5 max-sm:pb-0 sm:max-w-[520px]">
         <AddMethodForm key={session} onDone={onClose} />
       </DialogContent>
     </Dialog>
@@ -109,7 +109,7 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
           setKind(v as WithdrawalKind);
           setNumber("");
         }}
-        className="grid grid-cols-4 gap-2"
+        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
         aria-label="Method type"
       >
         {KINDS.map((k) => (
@@ -148,7 +148,7 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
           </Field>
         ) : (
           <>
-            <div className={cn("grid gap-3", kind === "bank" && "grid-cols-2")}>
+            <div className={cn("grid gap-4 sm:gap-3", kind === "bank" && "sm:grid-cols-2")}>
               <Field label={kind === "card" ? "Name on card" : "Account holder"} htmlFor="wm-holder">
                 <Input id="wm-holder" required value={holder} onChange={(e) => setHolder(e.target.value)} />
               </Field>
@@ -209,7 +209,7 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
         </p>
       </div>
 
-      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3">
+      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3 max-sm:mb-0 max-sm:pb-[max(12px,env(safe-area-inset-bottom))] max-sm:[&_button]:h-10">
         <Button type="button" onClick={onDone}>
           Cancel
         </Button>
