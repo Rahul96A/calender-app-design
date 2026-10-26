@@ -61,3 +61,7 @@ src/
 The seed in `src/lib/seed.ts` is what the design shows: the week of Nov 8–14,
 2026 with Tue Nov 10 selected, and allowance figures of 7 available, 2 pending,
 3 upcoming.
+
+## License
+
+[MIT](LICENSE) © 2026 Kargul Studio
