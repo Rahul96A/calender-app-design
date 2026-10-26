@@ -1,26 +1,325 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Hover only where a real pointer exists (touch taps shouldn't stick) */
+@custom-variant hover-fine {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------ */
+/* Design tokens — names mirror the Figma variables                     */
+/* ------------------------------------------------------------------ */
+:root {
+  --bg-app: #f8f8f8;
+  --bg-surface: #ffffff;
+  --bg-selected: #eaeae6;
+  --bg-hover: #f1f1ee;
+
+  --border-hairline: #e5e7e1;
+  --border-control: #ededed;
+  --border-subtle: #f2f2f2;
+  --border-segment: #e5e5e5;
+
+  --text-primary: #1d1d1d;
+  --text-secondary: #757575;
+  --text-placeholder: #a1a1a1;
+  --text-section: #b8b8b8;
+  --text-heading: #09090b;
+  --text-table: #040e11;
+  --text-dayname: #c2c2c2;
+  --text-on-accent: #ffffff;
+  --icon: #a1a1a1;
+
+  --brand: #8965de;
+  --brand-strong: #7a55d4;
+  --brand-tint: rgba(137, 101, 222, 0.1);
+
+  --event-green-bg: #bde7db;
+  --event-green-fg: #005c42;
+  --event-purple-bg: #e3daf7;
+  --event-purple-fg: #594290;
+  --event-cyan-bg: #aee9f4;
+  --event-cyan-fg: #28555d;
+  --event-orange-bg: #fdd8b8;
+  --event-orange-fg: #774317;
+  --event-pink-bg: #fdd4e6;
+  --event-pink-fg: #813455;
+  --event-blue-bg: #c5e2f9;
+  --event-blue-fg: #0e5289;
+
+  --category-green-tint: rgba(0, 164, 117, 0.12);
+  --category-orange-tint: rgba(248, 140, 47, 0.12);
+  --category-blue-tint: rgba(23, 139, 232, 0.12);
+  --category-cyan-tint: rgba(100, 213, 233, 0.16);
+  --category-pink-tint: rgba(248, 100, 164, 0.12);
+  --category-purple-tint: rgba(137, 101, 222, 0.12);
+
+  --status-success: #00a475;
+  --status-success-tint: rgba(0, 164, 117, 0.08);
+  --status-success-border: rgba(0, 164, 117, 0.12);
+  --status-danger: #ef4747;
+  --status-danger-tint: rgba(239, 71, 71, 0.08);
+  --status-danger-border: rgba(239, 71, 71, 0.12);
+  --status-warning: #e07a1f;
+  --status-warning-tint: rgba(248, 140, 47, 0.1);
+  --status-warning-border: rgba(248, 140, 47, 0.16);
+  --status-neutral: #757575;
+  --status-neutral-tint: rgba(117, 117, 117, 0.08);
+  --status-neutral-border: rgba(117, 117, 117, 0.14);
+
+  --toggle-track: #ededed;
+  --toggle-stroke: #d9ddd5;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* shadcn/ui semantic tokens, mapped onto the design tokens */
+  --background: var(--bg-surface);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-app);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-app);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--status-danger);
+  --border: var(--border-hairline);
+  --input: var(--border-control);
+  --ring: var(--brand);
+  --radius: 0.5rem;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg-app: #121212;
+  --bg-surface: #181818;
+  --bg-selected: #262624;
+  --bg-hover: #232321;
+
+  --border-hairline: #2a2a28;
+  --border-control: #313131;
+  --border-subtle: #222222;
+  --border-segment: #363636;
+
+  --text-primary: #ededed;
+  --text-secondary: #9a9a9a;
+  --text-placeholder: #6b6b6b;
+  --text-section: #5c5c5c;
+  --text-heading: #f5f5f5;
+  --text-table: #e4e4e4;
+  --text-dayname: #6b6b6b;
+  --icon: #7d7d7d;
+
+  --brand-tint: rgba(137, 101, 222, 0.18);
+
+  --event-green-bg: #123d31;
+  --event-green-fg: #8fe0c6;
+  --event-purple-bg: #2d2547;
+  --event-purple-fg: #c9b8f5;
+  --event-cyan-bg: #11393f;
+  --event-cyan-fg: #93e3f1;
+  --event-orange-bg: #43301f;
+  --event-orange-fg: #f9c497;
+  --event-pink-bg: #43222f;
+  --event-pink-fg: #f6b3d0;
+  --event-blue-bg: #17324a;
+  --event-blue-fg: #a9d3f6;
+
+  --toggle-track: #8965de;
+  --toggle-stroke: #7a55d4;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  /* Design tokens */
+  --color-app: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-selected: var(--bg-selected);
+  --color-hover: var(--bg-hover);
+
+  --color-hairline: var(--border-hairline);
+  --color-control: var(--border-control);
+  --color-subtle: var(--border-subtle);
+  --color-segment: var(--border-segment);
+
+  --color-fg: var(--text-primary);
+  --color-fg-2: var(--text-secondary);
+  --color-placeholder: var(--text-placeholder);
+  --color-section: var(--text-section);
+  --color-heading: var(--text-heading);
+  --color-table: var(--text-table);
+  --color-dayname: var(--text-dayname);
+  --color-icon: var(--icon);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-tint: var(--brand-tint);
+
+  --color-success: var(--status-success);
+  --color-danger: var(--status-danger);
+  --color-warning: var(--status-warning);
+
+  /* shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-heading: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-inter: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+  --ease-drawer: var(--ease-drawer);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                 */
+/* ------------------------------------------------------------------ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    @apply bg-app font-sans font-medium text-fg;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: rgba(137, 101, 222, 0.22);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-placeholder);
+    opacity: 1;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    opacity: 0.45;
+    cursor: pointer;
+  }
+  [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+  [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Typography — every style in the design is Geist Medium, leading 1,  */
+/* tracked -2% (12px captions are tracked -1%).                         */
+/* ------------------------------------------------------------------ */
+@utility t-16 {
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.32px;
+}
+@utility t-14 {
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -0.28px;
+}
+@utility t-12 {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.12px;
+}
+@utility t-12-tight {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.24px;
+}
+@utility salt {
+  font-feature-settings: "salt" 1;
+}
+
+/* Pressable feedback — every button should feel like it heard you */
+@utility press {
+  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+/* Accent surface: the Figma gradient bitmap + 1px ring + top highlight */
+@utility accent-surface {
+  background-color: var(--brand);
+  background-image: url("/icons/btn-accent-bg.png");
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 0 1px var(--brand), inset 0 4px 4px 0 rgba(255, 255, 255, 0.16);
+  color: var(--text-on-accent);
+}
+@utility accent-badge {
+  background-color: var(--brand);
+  background-image: url("/icons/date-accent-bg.png");
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 0 1px var(--brand), inset 0 4px 4px 0 rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+@utility scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hairline) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+  }
 }
