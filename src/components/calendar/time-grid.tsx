@@ -239,7 +239,11 @@ export function TimeGrid({ days }: { days: string[] }) {
     <>
       <DayHeaders days={days} />
       <AllDayRow days={days} axisWidth={AXIS_WIDTH} />
-      <div ref={scrollRef} className="relative min-h-0 w-full flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={scrollRef}
+        onScroll={() => useCalendarStore.getState().popover && useCalendarStore.getState().closePopover()}
+        className="relative min-h-0 w-full flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {/* Masks the line/label that sits exactly on the top edge when scrolled to an hour. */}
         <div className="pointer-events-none sticky top-0 z-20 h-0 w-full" aria-hidden>
           <div className="absolute top-0 left-0 h-2 bg-surface" style={{ width: AXIS_WIDTH }} />

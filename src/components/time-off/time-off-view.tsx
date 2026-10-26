@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Calendar } from "@/components/calendar/calendar";
+import { useCalendarStore } from "@/stores/calendar-store";
 import { DEFAULT_FILTERS, RequestsTable, type RequestFilters } from "./requests-table";
 import { StatsPanel } from "./stats-panel";
 
@@ -13,7 +14,11 @@ export function TimeOffView() {
   const tableRef = useRef<HTMLElement>(null);
 
   return (
-    <div data-page-scroll className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto">
+    <div
+      data-page-scroll
+      onScroll={() => useCalendarStore.getState().popover && useCalendarStore.getState().closePopover()}
+      className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto"
+    >
       <div
         className="flex w-full shrink-0 overflow-hidden"
         style={{ height: `max(520px, calc(100% - ${REQUESTS_PEEK}px))` }}
