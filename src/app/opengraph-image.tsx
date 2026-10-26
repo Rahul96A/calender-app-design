@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Kargul Workspace — time off and calendar for your team";
+export const alt = "Kargul — calendar for your team";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -36,7 +36,7 @@ export default function OpengraphImage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <img src={dataUri(icon)} width={44} height={44} alt="" style={{ borderRadius: 11 }} />
-          <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.8 }}>Kargul Workspace</div>
+          <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.8 }}>Kargul</div>
           <div
             style={{
               marginLeft: 8,
@@ -52,7 +52,7 @@ export default function OpengraphImage() {
         </div>
 
         <div style={{ marginTop: 34, fontSize: 56, fontWeight: 600, letterSpacing: -2, lineHeight: 1.05 }}>
-          Time off &amp; calendar for your team
+          Calendar for your team
         </div>
         <div style={{ marginTop: 16, fontSize: 26, color: "#757575", letterSpacing: -0.5 }}>
           Plan leave, track requests and balances — in one calm workspace.
