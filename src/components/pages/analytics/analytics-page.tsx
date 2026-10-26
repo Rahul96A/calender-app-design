@@ -20,7 +20,7 @@ import type { Invoice, InvoiceStatus, LeaveType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
-import { PageHeader, PageRoot, StatIcon, type StatGlyph } from "@/components/pages/shared/page-chrome";
+import { PageHeader, PageRoot, StatGrid, StatTile } from "@/components/pages/shared/page-chrome";
 import { ChartCard, ColumnChart, DataTable, SERIES, TipRow, type Column, type Series } from "./charts";
 
 const fmtDays = (v: number) => `${formatDays(Math.round(v * 100) / 100)}d`;
@@ -43,9 +43,9 @@ export function AnalyticsPage() {
         title="Overview"
         description={`January 1 – ${MONTHS[fromKey(today).getMonth()]} ${fromKey(today).getDate()}, ${year} · leave, time and revenue at a glance`}
       />
-      <div className="grid gap-4 p-4">
+      <div className="grid gap-3 p-4 md:gap-4">
         <KpiRow />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:gap-4 xl:grid-cols-2">
           <LeavePerMonthCard />
           <HoursCard />
           <LeaveByTypeCard />
@@ -57,19 +57,6 @@ export function AnalyticsPage() {
 }
 
 /* ------------------------------------------------------------------ KPIs */
-
-function Kpi({ icon, label, value, hint }: { icon: StatGlyph; label: string; value: React.ReactNode; hint: React.ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-hairline bg-surface p-4">
-      <span className="flex items-center gap-2">
-        <StatIcon name={icon} size={16} />
-        <span className="t-14 truncate text-fg-2">{label}</span>
-      </span>
-      <span className="text-[28px] leading-none font-medium tracking-[-0.84px] text-fg">{value}</span>
-      <span className="t-12 truncate text-fg-2">{hint}</span>
-    </div>
-  );
-}
 
 function KpiRow() {
   const today = useToday();
@@ -103,32 +90,32 @@ function KpiRow() {
 
   const { stats } = kpis;
   return (
-    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      <Kpi
+    <StatGrid>
+      <StatTile
         icon="holidays"
         label="Days off approved"
         value={formatDays(stats.taken + stats.upcoming)}
         hint={`${formatDays(stats.taken)} taken · ${formatDays(stats.upcoming)} booked ahead`}
       />
-      <Kpi
+      <StatTile
         icon="available"
         label="Approval rate"
         value={kpis.decided ? `${Math.round((kpis.approved / kpis.decided) * 100)}%` : "—"}
         hint={`${plural(kpis.thisYear.length, "request", "requests")} · ${stats.pendingCount} pending`}
       />
-      <Kpi
+      <StatTile
         icon="per-year"
         label="Hours, last 30 days"
         value={fmtHours(kpis.minutes)}
         hint={kpis.minutes ? `${Math.round((kpis.billable / kpis.minutes) * 100)}% billable` : "No time tracked"}
       />
-      <Kpi
+      <StatTile
         icon="upcoming"
         label="Revenue collected"
         value={money(kpis.paid, kpis.currency)}
         hint={`${money(kpis.outstanding, kpis.currency)} outstanding`}
       />
-    </div>
+    </StatGrid>
   );
 }
 
@@ -171,7 +158,7 @@ function LeavePerMonthCard() {
     <ChartCard
       title="Leave taken per month"
       description={`${plural(Math.round(total * 100) / 100, "approved day", "approved days")} in ${year}`}
-      chart={<ColumnChart columns={columns} series={series} format={fmtDays} formatTick={(v) => formatDays(v)} />}
+      chart={<ColumnChart columns={columns} series={series} format={fmtDays} formatTick={(v) => formatDays(v)} compactLabelEvery={2} />}
       table={
         <DataTable
           head={["Month", "Approved days"]}
@@ -210,6 +197,7 @@ function HoursCard() {
           key: date,
           label: String(d.getDate()),
           title: `${WEEKDAYS[d.getDay()]}, ${formatShort(date)}`,
+          short: formatShort(date),
           values: sum(date, date),
           emphasis: date === today,
         };
@@ -223,6 +211,7 @@ function HoursCard() {
         key: from,
         label: formatShort(from),
         title: `Week of ${formatShort(from)}`,
+        short: formatShort(from),
         values: sum(from, to),
         emphasis: from === current,
       };
@@ -243,7 +232,7 @@ function HoursCard() {
       description={`${fmtHours(billable + other)} in the last ${mode === "day" ? "14 days" : "12 weeks"} · ${fmtHours(billable)} billable`}
       legend={series}
       actions={
-        <div className="mr-1 flex items-center rounded-lg bg-app p-0.5" role="group" aria-label="Group by">
+        <div className="flex items-center rounded-lg bg-app p-0.5 md:mr-1" role="group" aria-label="Group by">
           {(["day", "week"] as const).map((m) => (
             <button
               key={m}
@@ -251,7 +240,7 @@ function HoursCard() {
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
               className={cn(
-                "t-12 h-6 rounded-md px-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40",
+                "t-12 h-8 rounded-md px-3 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40 md:h-6 md:px-2",
                 mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-fg-2 hover-fine:text-fg",
               )}
             >
@@ -268,12 +257,22 @@ function HoursCard() {
           formatTick={tickHours}
           unit={60}
           labelEvery={mode === "week" ? 2 : 1}
+          compactLabelEvery={mode === "week" ? 3 : 2}
         />
       }
       table={
         <DataTable
           head={[mode === "day" ? "Day" : "Week", "Billable", "Non-billable", "Total"]}
-          rows={buckets.map((b) => [b.title, fmtHours(b.values[0]), fmtHours(b.values[1]), fmtHours(b.values[0] + b.values[1])])}
+          rows={buckets.map((b) => [
+            // Short dates on phones keep all four columns in view.
+            <>
+              <span className="md:hidden">{b.short}</span>
+              <span className="max-md:hidden">{b.title}</span>
+            </>,
+            fmtHours(b.values[0]),
+            fmtHours(b.values[1]),
+            fmtHours(b.values[0] + b.values[1]),
+          ])}
           foot={["Total", fmtHours(billable), fmtHours(other), fmtHours(billable + other)]}
         />
       }
@@ -390,14 +389,14 @@ function InvoicesCard() {
       title="Invoice revenue by status"
       description={`${money(total, currency)} invoiced across ${plural(invoices.length, "invoice", "invoices")}`}
       actions={
-        <Button variant="ghost" size="sm" asChild className="mr-1">
+        <Button variant="ghost" size="sm" asChild className="max-md:h-9 md:mr-1">
           <Link href="/invoice">
             Invoices <ArrowRightIcon />
           </Link>
         </Button>
       }
       chart={
-        <div className="grid gap-5 pt-1">
+        <div className="grid min-w-0 gap-5 pt-1">
           <div className="flex h-3 gap-[2px]" role="img" aria-label="Share of invoiced revenue by status">
             {visible.length === 0 ? <span className="h-full flex-1 rounded-[4px] bg-hairline" /> : null}
             {visible.map((r, i) => (
@@ -428,23 +427,31 @@ function InvoicesCard() {
             {rows.map((r) => {
               const s = INVOICE_STATUS[r.status];
               return (
-                <li key={r.status} className="flex h-11 items-center gap-3 border-b border-subtle last:border-b-0">
-                  <span
-                    className="inline-flex h-[22px] shrink-0 items-center gap-1 rounded-[6px] border pr-1.5 pl-1 [&_svg]:size-3.5"
-                    style={{
-                      background: `var(--status-${s.tone}-tint)`,
-                      borderColor: `var(--status-${s.tone}-border)`,
-                      color: `var(--status-${s.tone})`,
-                    }}
-                  >
-                    {s.icon}
-                    <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{s.label}</span>
+                <li
+                  key={r.status}
+                  className="flex items-center gap-3 border-b border-subtle py-2.5 last:border-b-0 md:h-11 md:py-0"
+                >
+                  {/* Phones: badge over count on the left, amount over share on the right. */}
+                  <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5 md:flex-row md:items-center md:gap-3">
+                    <span
+                      className="inline-flex h-[22px] shrink-0 items-center gap-1 rounded-[6px] border pr-1.5 pl-1 [&_svg]:size-3.5"
+                      style={{
+                        background: `var(--status-${s.tone}-tint)`,
+                        borderColor: `var(--status-${s.tone}-border)`,
+                        color: `var(--status-${s.tone})`,
+                      }}
+                    >
+                      {s.icon}
+                      <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{s.label}</span>
+                    </span>
+                    <span className="t-12 text-fg-2 md:flex-1">{plural(r.count, "invoice", "invoices")}</span>
                   </span>
-                  <span className="t-12 flex-1 text-fg-2">{plural(r.count, "invoice", "invoices")}</span>
-                  <span className="t-12 w-10 text-right text-placeholder tabular-nums">
-                    {total ? `${Math.round((r.amount / total) * 100)}%` : "—"}
+                  <span className="flex shrink-0 flex-col items-end gap-1.5 md:flex-row md:items-center md:gap-3">
+                    <span className="t-12 text-right text-placeholder tabular-nums max-md:order-last md:w-10">
+                      {total ? `${Math.round((r.amount / total) * 100)}%` : "—"}
+                    </span>
+                    <span className="t-14 text-right text-fg tabular-nums md:w-24">{money(r.amount, currency)}</span>
                   </span>
-                  <span className="t-14 w-24 text-right text-fg tabular-nums">{money(r.amount, currency)}</span>
                 </li>
               );
             })}

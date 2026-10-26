@@ -54,6 +54,7 @@ export function ChartCard({
   className?: string;
 }) {
   const [view, setView] = useState<"chart" | "table">("chart");
+  const showLegend = !!legend && legend.length > 1 && view === "chart";
   return (
     <Card className={className}>
       <CardHeader
@@ -61,7 +62,7 @@ export function ChartCard({
         description={description}
         actions={
           <>
-            {actions}
+            {actions ? <div className="hidden md:contents">{actions}</div> : null}
             <div className="flex items-center rounded-lg bg-app p-0.5" role="group" aria-label="View">
               <ToggleIcon active={view === "chart"} label="Chart view" onClick={() => setView("chart")}>
                 <ChartColumnIcon />
@@ -73,8 +74,19 @@ export function ChartCard({
           </>
         }
       />
-      {legend && legend.length > 1 && view === "chart" ? <Legend series={legend} className="px-4 pt-3" /> : null}
+      {showLegend ? <Legend series={legend} className="px-4 pt-3 max-md:hidden" /> : null}
+      {/* Phones: card actions leave the header so the title keeps its width — beside the legend
+          for charts that have one, otherwise in a footer row. */}
+      {legend && legend.length > 1 && (actions || showLegend) ? (
+        <div className="flex min-h-11 items-center gap-3 px-4 pt-3 md:hidden">
+          {showLegend ? <Legend series={legend} className="min-w-0 flex-1 gap-x-3 gap-y-1" /> : <span className="flex-1" />}
+          {actions}
+        </div>
+      ) : null}
       <div className="flex-1 p-4">{view === "chart" ? chart : table}</div>
+      {actions && !(legend && legend.length > 1) ? (
+        <div className="flex justify-end border-t border-subtle px-2 py-1.5 md:hidden">{actions}</div>
+      ) : null}
     </Card>
   );
 }
@@ -99,7 +111,7 @@ function ToggleIcon({
           aria-pressed={active}
           onClick={onClick}
           className={cn(
-            "flex size-6 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40 [&_svg]:size-3.5",
+            "flex size-8 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40 md:size-6 [&_svg]:size-3.5",
             active ? "bg-surface text-fg shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-icon hover-fine:text-fg",
           )}
         >
@@ -160,6 +172,7 @@ export function ColumnChart({
   formatTick = format,
   height = 180,
   labelEvery = 1,
+  compactLabelEvery = labelEvery,
   unit = 1,
 }: {
   columns: Column[];
@@ -168,6 +181,8 @@ export function ColumnChart({
   formatTick?: (v: number) => string;
   height?: number;
   labelEvery?: number;
+  /** Label stride below md, counted from the emphasized column so it always keeps its label. */
+  compactLabelEvery?: number;
   /** Ticks are rounded in this unit (e.g. 60 to get whole hours from minutes). */
   unit?: number;
 }) {
@@ -178,6 +193,8 @@ export function ColumnChart({
   const ticks = scaled.ticks.map((t) => t * unit);
   const peak = max > 0 ? totals.indexOf(max) : -1;
   const y = (v: number) => (v / top) * height;
+  const emphasized = columns.findLastIndex((c) => c.emphasis);
+  const anchor = emphasized >= 0 ? emphasized : columns.length - 1;
 
   return (
     <div className="flex gap-2 pt-4">
@@ -265,14 +282,24 @@ export function ColumnChart({
           style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
           aria-hidden
         >
-          {columns.map((c, i) => (
-            <span
-              key={c.key}
-              className={cn("t-12-tight salt truncate text-center", c.emphasis ? "text-fg" : "text-placeholder")}
-            >
-              {(columns.length - 1 - i) % labelEvery === 0 ? c.label : ""}
-            </span>
-          ))}
+          {columns.map((c, i) => {
+            const wide = (columns.length - 1 - i) % labelEvery === 0;
+            const compact = Math.abs(i - anchor) % compactLabelEvery === 0;
+            return (
+              <span key={c.key} className="flex min-w-0 justify-center">
+                <span
+                  className={cn(
+                    "t-12-tight salt text-center whitespace-nowrap md:min-w-0 md:truncate",
+                    c.emphasis ? "text-fg" : "text-placeholder",
+                    wide && !compact && "max-md:invisible",
+                    !wide && compact && "md:invisible",
+                  )}
+                >
+                  {wide || compact ? c.label : ""}
+                </span>
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -296,7 +323,7 @@ export function DataTable({
         <thead className="sticky top-0 bg-app">
           <tr className="h-10">
             {head.map((h, i) => (
-              <th key={h} className={cn("t-14 px-3 font-medium text-fg-2", i === 0 ? "text-left" : "text-right")}>
+              <th key={h} className={cn("t-14 px-2 font-medium whitespace-nowrap text-fg-2 md:px-3", i === 0 ? "text-left" : "text-right")}>
                 {h}
               </th>
             ))}
@@ -306,7 +333,7 @@ export function DataTable({
           {rows.map((r, ri) => (
             <tr key={ri} className="h-10 border-t border-subtle">
               {r.map((cell, i) => (
-                <td key={i} className={cn("t-14 px-3 text-table", i === 0 ? "text-left" : "text-right tabular-nums")}>
+                <td key={i} className={cn("t-14 px-2 whitespace-nowrap text-table md:px-3", i === 0 ? "text-left" : "text-right tabular-nums")}>
                   {cell}
                 </td>
               ))}
@@ -317,7 +344,7 @@ export function DataTable({
           <tfoot>
             <tr className="h-10 border-t border-hairline bg-app">
               {foot.map((cell, i) => (
-                <td key={i} className={cn("t-14 px-3 text-fg", i === 0 ? "text-left" : "text-right tabular-nums")}>
+                <td key={i} className={cn("t-14 px-2 whitespace-nowrap text-fg md:px-3", i === 0 ? "text-left" : "text-right tabular-nums")}>
                   {cell}
                 </td>
               ))}
