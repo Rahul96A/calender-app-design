@@ -120,6 +120,26 @@ function eventsForRequest(req: LeaveRequest): CalEvent[] {
   }));
 }
 
+// localStorage throws when the ~5MB quota is full (e.g. large uploaded
+// documents). Keep the app working in memory and say so once.
+let warnedQuota = false;
+const safeLocalStorage = {
+  getItem: (name: string) => localStorage.getItem(name),
+  removeItem: (name: string) => localStorage.removeItem(name),
+  setItem: (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+      warnedQuota = false;
+    } catch {
+      if (warnedQuota) return;
+      warnedQuota = true;
+      toast.error("Browser storage is full", {
+        description: "Your latest changes won't survive a reload. Remove some uploaded documents to free space.",
+      });
+    }
+  },
+};
+
 const whenLabel = (from: string, to: string) =>
   from === to ? formatShort(from) : `${formatShort(from)} – ${formatShort(to)}`;
 
@@ -379,7 +399,7 @@ export const useAppStore = create<AppStore>()(
     {
       name: "calendar-app:state",
       version: STATE_VERSION,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       // Hydrate after mount so the server-rendered markup (the seed) matches.
       skipHydration: true,
       partialize: (s) => {
