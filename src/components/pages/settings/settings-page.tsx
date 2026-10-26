@@ -62,19 +62,29 @@ export function SettingsPage() {
   return (
     <PageRoot>
       <PageHeader title="Settings" description="Changes are saved automatically" />
+      {/* md+: vertical tab rail beside the panel. Phones: a sticky, horizontally scrolling tab bar above it. */}
       <Tabs
         value={tab}
         onValueChange={setTab}
         orientation="vertical"
-        className="mx-auto w-full max-w-[960px] flex-row items-start gap-6 p-4"
+        className="mx-auto w-full max-w-[960px] flex-col gap-4 p-4 md:flex-row md:items-start md:gap-6"
       >
-        <TabsList className="sticky top-[84px] h-fit w-[200px] shrink-0 gap-0.5 bg-transparent p-0">
+        <TabsList
+          className={cn(
+            "h-fit shrink-0 gap-0.5 bg-transparent p-0 md:sticky md:top-[84px] md:w-[200px]",
+            "max-md:sticky max-md:top-0 max-md:z-10 max-md:-mx-4 max-md:-mt-4 max-md:w-auto max-md:flex-row! max-md:justify-start max-md:gap-1 max-md:overflow-x-auto max-md:overscroll-x-contain max-md:rounded-none max-md:border-b max-md:border-hairline max-md:bg-app max-md:px-4 max-md:py-2",
+            "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          )}
+        >
           {TABS.map(({ value, label, icon: Glyph }) => (
             <TabsTrigger
               key={value}
               value={value}
+              // Keep a tapped, half-hidden tab fully in view.
+              onClick={(e) => e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })}
               className={cn(
                 "t-14 salt h-8 w-full flex-none justify-start gap-2 rounded-lg border-0 px-2 text-[14px] text-fg-2 after:hidden",
+                "max-md:h-10 max-md:w-auto! max-md:px-3",
                 "hover-fine:bg-hover hover-fine:text-fg data-active:bg-selected data-active:text-fg data-active:shadow-none",
                 "dark:data-active:border-transparent dark:data-active:bg-selected",
                 "focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
@@ -85,7 +95,7 @@ export function SettingsPage() {
             </TabsTrigger>
           ))}
         </TabsList>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 md:flex-1">
           <TabsContent value="general">
             <GeneralTab />
           </TabsContent>
@@ -121,26 +131,44 @@ function Panel({ title, description, children }: { title: string; description: s
   );
 }
 
+/** Phones: selects and buttons grow to 40px touch targets (and fill the row when stacked). */
+const TOUCH_CONTROL = "max-md:h-10!";
+
 function Row({
   title,
   description,
   htmlFor,
+  stack = false,
   children,
 }: {
   title: string;
   description?: React.ReactNode;
   htmlFor?: string;
+  /** Put the control under the label on phones (selects, steppers, buttons); switches stay inline. */
+  stack?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[68px] items-center gap-6 px-4 py-3">
+    <div
+      className={cn(
+        "flex min-h-[68px] items-center gap-4 px-4 py-3 sm:gap-6",
+        stack && "max-sm:flex-col max-sm:items-stretch max-sm:gap-3 max-sm:py-3.5",
+      )}
+    >
       <div className="grid min-w-0 flex-1 gap-1.5">
         <label htmlFor={htmlFor} className="t-14 text-fg">
           {title}
         </label>
         {description ? <p className="t-12 leading-[1.4] text-fg-2">{description}</p> : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-2",
+          stack && "max-sm:*:flex-1",
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -151,12 +179,12 @@ function GeneralTab() {
   const [settings, set] = useSettings();
   return (
     <Panel title="General" description="How dates and times appear across your calendar.">
-      <Row title="Week starts on" description="First column in week and month views" htmlFor="st-week">
+      <Row title="Week starts on" description="First column in week and month views" htmlFor="st-week" stack>
         <Select
           value={String(settings.weekStartsOn)}
           onValueChange={(v) => set("weekStartsOn", Number(v) as 0 | 1)}
         >
-          <SelectTrigger id="st-week" className="w-40">
+          <SelectTrigger id="st-week" className={cn("w-40", TOUCH_CONTROL)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -165,9 +193,9 @@ function GeneralTab() {
           </SelectContent>
         </Select>
       </Row>
-      <Row title="Time format" description="Used for events, requests and time entries" htmlFor="st-time">
+      <Row title="Time format" description="Used for events, requests and time entries" htmlFor="st-time" stack>
         <Select value={settings.timeFormat} onValueChange={(v) => set("timeFormat", v as Settings["timeFormat"])}>
-          <SelectTrigger id="st-time" className="w-40">
+          <SelectTrigger id="st-time" className={cn("w-40", TOUCH_CONTROL)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -176,9 +204,9 @@ function GeneralTab() {
           </SelectContent>
         </Select>
       </Row>
-      <Row title="Calendar day starts at" description="Day and week views scroll to this hour" htmlFor="st-start">
+      <Row title="Calendar day starts at" description="Day and week views scroll to this hour" htmlFor="st-start" stack>
         <Select value={String(settings.dayStartHour)} onValueChange={(v) => set("dayStartHour", Number(v))}>
-          <SelectTrigger id="st-start" className="w-40">
+          <SelectTrigger id="st-start" className={cn("w-40", TOUCH_CONTROL)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="max-h-72">
@@ -220,14 +248,14 @@ function Stepper({
   const invalid = text !== null && (text.trim() === "" || Number.isNaN(Number(text)) || Number(text) < min || Number(text) > max);
 
   return (
-    <div className="flex items-center gap-1">
-      <Button size="icon" aria-label={`Decrease ${label}`} disabled={value <= min} onClick={() => commit(value - 1)}>
+    <div className="flex items-center gap-1 max-sm:w-full">
+      <Button size="icon" className="max-md:size-10" aria-label={`Decrease ${label}`} disabled={value <= min} onClick={() => commit(value - 1)}>
         <MinusIcon className="text-icon" />
       </Button>
       <Input
         id={id}
         inputMode="numeric"
-        className="h-[30px] w-14 text-center tabular-nums"
+        className="h-[30px] w-14 text-center tabular-nums max-md:h-10 max-md:text-[16px] max-sm:flex-1"
         value={text ?? String(value)}
         aria-invalid={invalid || undefined}
         onChange={(e) => {
@@ -249,7 +277,7 @@ function Stepper({
           }
         }}
       />
-      <Button size="icon" aria-label={`Increase ${label}`} disabled={value >= max} onClick={() => commit(value + 1)}>
+      <Button size="icon" className="max-md:size-10" aria-label={`Increase ${label}`} disabled={value >= max} onClick={() => commit(value + 1)}>
         <PlusIcon className="text-icon" />
       </Button>
     </div>
@@ -267,7 +295,7 @@ function TimeOffTab() {
   return (
     <div className="grid gap-4">
       <Panel title="Time off" description="Your yearly allowance. Balances everywhere update instantly.">
-        <Row title="Contract days" description="Paid days off per calendar year (0–60)" htmlFor="st-contract">
+        <Row title="Contract days" description="Paid days off per calendar year (0–60)" htmlFor="st-contract" stack>
           <Stepper
             id="st-contract"
             label="contract days"
@@ -277,7 +305,7 @@ function TimeOffTab() {
             onChange={(v) => set("contractDays", v)}
           />
         </Row>
-        <Row title="Carryover days" description="Unused days brought over from last year (0–30)" htmlFor="st-carryover">
+        <Row title="Carryover days" description="Unused days brought over from last year (0–30)" htmlFor="st-carryover" stack>
           <Stepper
             id="st-carryover"
             label="carryover days"
@@ -288,8 +316,8 @@ function TimeOffTab() {
           />
         </Row>
       </Panel>
-      <div className="flex items-center gap-4 rounded-xl border border-hairline bg-app px-4 py-3.5">
-        <div className="grid flex-1 gap-1.5">
+      <div className="flex items-center gap-4 rounded-xl border border-hairline bg-app px-4 py-3.5 max-sm:flex-wrap max-sm:gap-3">
+        <div className="grid flex-1 gap-1.5 max-sm:basis-full">
           <span className="t-14 text-fg">
             {formatDays(total)} days this year · {formatDays(stats.available)} available
           </span>
@@ -298,8 +326,12 @@ function TimeOffTab() {
             {stats.holidays} public holidays never count
           </span>
         </div>
-        <Button onClick={() => openOverlay({ kind: "holidays" })}>Holidays</Button>
-        <Button onClick={() => openOverlay({ kind: "policy" })}>View policy</Button>
+        <Button className="max-md:h-10 max-sm:flex-1" onClick={() => openOverlay({ kind: "holidays" })}>
+          Holidays
+        </Button>
+        <Button className="max-md:h-10 max-sm:flex-1" onClick={() => openOverlay({ kind: "policy" })}>
+          View policy
+        </Button>
       </div>
     </div>
   );
@@ -389,7 +421,7 @@ function AppearanceTab() {
         <h3 className="t-16 text-fg">Appearance</h3>
         <p className="t-14 text-fg-2">Pick a theme for this browser. You can also toggle it from the sidebar.</p>
       </div>
-      <div className="grid grid-cols-2 gap-4" role="radiogroup" aria-label="Theme">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4" role="radiogroup" aria-label="Theme">
         {(["light", "dark"] as const).map((t) => {
           const active = current === t;
           return (
@@ -451,15 +483,19 @@ function DataTab() {
 
   return (
     <Panel title="Data" description="Everything lives in this browser’s local storage.">
-      <Row title="Export data" description={counts}>
-        <Button onClick={exportJson}>
+      <Row title="Export data" description={counts} stack>
+        <Button onClick={exportJson} className={TOUCH_CONTROL}>
           <DownloadIcon className="text-icon" /> Export JSON
         </Button>
       </Row>
-      <Row title="Reset demo data" description="Restore the original sample events, requests and documents. This replaces your changes.">
+      <Row
+        title="Reset demo data"
+        description="Restore the original sample events, requests and documents. This replaces your changes."
+        stack
+      >
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive">
+            <Button variant="destructive" className={TOUCH_CONTROL}>
               <RotateCcwIcon /> Reset
             </Button>
           </AlertDialogTrigger>
@@ -472,8 +508,8 @@ function DataTab() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={() => resetDemoData()}>
+              <AlertDialogCancel className="max-sm:h-10">Cancel</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" className="max-sm:h-10" onClick={() => resetDemoData()}>
                 Reset data
               </AlertDialogAction>
             </AlertDialogFooter>
