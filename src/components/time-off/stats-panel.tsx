@@ -85,14 +85,17 @@ export function StatsPanel({ onShowPending }: { onShowPending: () => void }) {
   ];
 
   return (
-    <aside aria-label="Time off stats" className="flex h-full w-[304px] shrink-0 flex-col overflow-hidden border-l border-hairline bg-app">
+    <aside
+      aria-label="Time off stats"
+      className="flex w-full shrink-0 flex-col overflow-hidden border-t border-hairline bg-app xl:h-full xl:w-[304px] xl:border-t-0 xl:border-l"
+    >
       <div className="flex h-[68px] w-full shrink-0 items-center gap-4 overflow-hidden border-b border-hairline px-4">
         <h2 className="t-16 min-w-0 flex-1 text-fg">Time off stats</h2>
         <Button size="sm" className="text-fg-2" onClick={() => openOverlay({ kind: "policy" })}>
           Learn more
         </Button>
       </div>
-      <div className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
+      <div className="scroll-thin grid min-h-0 flex-1 grid-cols-1 gap-x-6 overflow-y-auto px-4 min-[420px]:grid-cols-2 md:grid-cols-3 xl:flex xl:flex-col xl:gap-x-0">
         {stats.map((stat) => (
           <button
             key={stat.id}

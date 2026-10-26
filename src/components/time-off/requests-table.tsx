@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { FilterMenu, type FilterGroup } from "@/components/filter-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatLong } from "@/lib/dates";
-import { LEAVE_TYPES } from "@/lib/leave";
-import { cn } from "@/lib/utils";
+import { formatLong, formatShort } from "@/lib/dates";
+import { LEAVE_COLORS, LEAVE_TYPES } from "@/lib/leave";
 import type { LeaveRequest, LeaveStatus, LeaveType } from "@/lib/types";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
@@ -52,6 +50,30 @@ const COLUMNS: { key: SortKey | "notes"; label: string; width?: number }[] = [
   { key: "to", label: "Date to", width: 140 },
   { key: "notes", label: "Notes" },
 ];
+
+const SORT_OPTIONS: { value: string; label: string; sort: Sort }[] = [
+  { value: "recent", label: "Recently submitted", sort: null },
+  { value: "from-desc", label: "Newest dates", sort: { key: "from", dir: -1 } },
+  { value: "from-asc", label: "Oldest dates", sort: { key: "from", dir: 1 } },
+  { value: "days-desc", label: "Longest first", sort: { key: "days", dir: -1 } },
+  { value: "status-asc", label: "Status", sort: { key: "status", dir: 1 } },
+];
+
+const sortValue = (sort: Sort) => (sort ? `${sort.key}-${sort.dir === 1 ? "asc" : "desc"}` : "recent");
+
+const STATUS_LABEL: Record<LeaveStatus, string> = {
+  approved: "Approved",
+  pending: "Pending",
+  declined: "Declined",
+  cancelled: "Cancelled",
+};
+
+const STATUS_TONE: Record<LeaveStatus, string> = {
+  approved: "success",
+  pending: "warning",
+  declined: "danger",
+  cancelled: "neutral",
+};
 
 function compare(a: LeaveRequest, b: LeaveRequest, key: SortKey) {
   if (key === "days") return a.days - b.days;
@@ -87,7 +109,44 @@ export function RequestsTable({
     return sort ? ordered.sort((a, b) => compare(a, b, sort.key) * sort.dir) : ordered;
   }, [requests, filters, query, sort]);
 
-  const filtered = filters.statuses.length !== ALL_STATUSES.length || filters.types.length !== LEAVE_TYPES.length;
+  const statusFiltered = filters.statuses.length !== ALL_STATUSES.length;
+  const typeFiltered = filters.types.length !== LEAVE_TYPES.length;
+  const activeCount = Number(statusFiltered) + Number(typeFiltered) + Number(sort !== null);
+
+  const groups: FilterGroup[] = [
+    {
+      id: "status",
+      label: "Status",
+      type: "multi",
+      value: filters.statuses,
+      onChange: (v) => onFiltersChange({ ...filters, statuses: v as LeaveStatus[] }),
+      options: ALL_STATUSES.map((st) => ({
+        value: st,
+        label: STATUS_LABEL[st],
+        adornment: <span className="size-2 rounded-full" style={{ background: `var(--status-${STATUS_TONE[st]})` }} />,
+      })),
+    },
+    {
+      id: "type",
+      label: "Leave type",
+      type: "multi",
+      value: filters.types,
+      onChange: (v) => onFiltersChange({ ...filters, types: v as LeaveType[] }),
+      options: LEAVE_TYPES.map((t) => ({
+        value: t,
+        label: t,
+        adornment: <span className="size-2 rounded-full" style={{ background: `var(--event-${LEAVE_COLORS[t]}-fg)` }} />,
+      })),
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      type: "single",
+      value: sortValue(sort),
+      onChange: (v) => setSort(SORT_OPTIONS.find((o) => o.value === v)?.sort ?? null),
+      options: SORT_OPTIONS.map(({ value, label }) => ({ value, label })),
+    },
+  ];
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (!s || s.key !== key ? { key, dir: 1 } : s.dir === 1 ? { key, dir: -1 } : null));
@@ -96,12 +155,12 @@ export function RequestsTable({
     <section
       ref={ref}
       aria-label="Leave and requests"
-      className="flex w-full shrink-0 scroll-mt-0 flex-col overflow-hidden border-t border-hairline bg-surface"
+      className="flex w-full shrink-0 scroll-mt-0 flex-col overflow-hidden border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="flex h-14 w-full shrink-0 items-center gap-2 overflow-hidden px-4">
-        <h2 className="t-16 salt min-w-0 flex-1 text-heading">Leave and requests</h2>
-        <div className="flex items-center gap-2">
-          <label className="flex h-8 w-60 items-center gap-2 rounded-lg border border-control bg-surface px-2.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand/60 focus-within:ring-3 focus-within:ring-brand/15">
+      <div className="flex w-full shrink-0 flex-wrap items-center gap-2 overflow-hidden px-4 max-md:gap-y-3 max-md:py-3 md:h-14">
+        <h2 className="t-16 salt min-w-0 flex-1 text-heading max-md:basis-full">Leave and requests</h2>
+        <div className="flex items-center gap-2 max-md:w-full">
+          <label className="flex h-8 w-60 items-center gap-2 max-md:w-auto max-md:flex-1 rounded-lg border border-control bg-surface px-2.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand/60 focus-within:ring-3 focus-within:ring-brand/15">
             <Icon name="search" />
             <input
               type="search"
@@ -117,14 +176,22 @@ export function RequestsTable({
               </button>
             )}
           </label>
-          <FilterPopover filters={filters} onChange={onFiltersChange} active={filtered} />
+          <FilterMenu
+            title="Filter requests"
+            groups={groups}
+            activeCount={activeCount}
+            onReset={() => {
+              onFiltersChange(DEFAULT_FILTERS);
+              setSort(null);
+            }}
+          />
         </div>
       </div>
 
-      <div role="table" aria-rowcount={rows.length} className="w-full">
+      <div role="table" aria-rowcount={rows.length} className="w-full max-md:border-t max-md:border-hairline">
         <div
           role="row"
-          className="flex h-10 w-full items-center gap-4 overflow-hidden border-y border-hairline bg-app px-4"
+          className="flex h-10 w-full items-center gap-4 overflow-hidden border-y border-hairline bg-app px-4 max-md:hidden"
         >
           {COLUMNS.map((c) =>
             c.key === "notes" ? (
@@ -164,6 +231,7 @@ export function RequestsTable({
               className="mt-1"
               onClick={() => {
                 setQuery("");
+                setSort(null);
                 onFiltersChange(DEFAULT_FILTERS);
               }}
             >
@@ -196,8 +264,21 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
         if ((e.target as HTMLElement).closest("button,[role=menuitem]")) return;
         openOverlay({ kind: "request-details", requestId: r.id });
       }}
-      className="flex h-14 w-full cursor-pointer items-center gap-4 overflow-hidden border-b border-subtle px-4 transition-colors duration-150 hover-fine:bg-app/70"
+      className="flex h-14 w-full cursor-pointer items-center gap-4 overflow-hidden border-b border-subtle px-4 transition-colors duration-150 hover-fine:bg-app/70 max-md:h-auto max-md:items-start max-md:gap-3 max-md:py-3 max-md:active:bg-app"
     >
+      {/* Phones: a stacked card instead of six columns */}
+      <div role="cell" className="grid min-w-0 flex-1 gap-1.5 md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <StatusBadge status={r.status} />
+          <span className="t-14 min-w-0 truncate text-table">{r.type}</span>
+          <span className="t-12 ml-auto shrink-0 text-fg-2">{r.duration}</span>
+        </div>
+        <p className="t-14 text-table">
+          {r.from === r.to ? formatLong(r.from) : `${formatShort(r.from)} – ${formatShort(r.to)}, ${r.to.slice(0, 4)}`}
+        </p>
+        <p className="t-12 line-clamp-2 leading-[1.35] text-fg-2">{r.notes}</p>
+      </div>
+      <div className="contents max-md:hidden">
       <div role="cell" className="flex w-28 shrink-0 items-center overflow-hidden">
         <StatusBadge status={r.status} />
       </div>
@@ -216,12 +297,13 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
       <div role="cell" className="t-14 min-w-0 flex-1 truncate text-table">
         {r.notes}
       </div>
+      </div>
       <div role="cell" className="shrink-0">
         <DropdownMenu>
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-lg" aria-label={`Actions for ${r.notes}`} className="border-transparent">
+                <Button variant="ghost" size="icon-lg" aria-label={`Actions for ${r.notes}`} className="border-transparent max-md:-mt-1 max-md:-mr-2 max-md:size-10">
                   <Icon name="more" />
                 </Button>
               </DropdownMenuTrigger>
@@ -265,71 +347,5 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
         </DropdownMenu>
       </div>
     </div>
-  );
-}
-
-const STATUS_LABEL: Record<LeaveStatus, string> = {
-  approved: "Approved",
-  pending: "Pending",
-  declined: "Declined",
-  cancelled: "Cancelled",
-};
-
-function FilterPopover({
-  filters,
-  onChange,
-  active,
-}: {
-  filters: RequestFilters;
-  onChange: (f: RequestFilters) => void;
-  active: boolean;
-}) {
-  const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-
-  return (
-    <Popover>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button size="icon" aria-label="Filter requests" className="relative">
-              <Icon name="filter" className={cn(active && "text-brand")} />
-              {active && <span className="absolute top-[5px] right-[5px] size-1.5 rounded-full bg-brand ring-2 ring-surface" />}
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Filter</TooltipContent>
-      </Tooltip>
-      <PopoverContent align="end" sideOffset={8} className="w-60 gap-3 p-3">
-        <fieldset className="grid gap-2">
-          <legend className="t-12 mb-2 text-fg-2">Status</legend>
-          {ALL_STATUSES.map((s) => (
-            <label key={s} className="t-14 flex cursor-pointer items-center gap-2.5 text-fg">
-              <Checkbox
-                checked={filters.statuses.includes(s)}
-                onCheckedChange={() => onChange({ ...filters, statuses: toggle(filters.statuses, s) })}
-              />
-              <StatusBadge status={s} />
-              <span className="sr-only">{STATUS_LABEL[s]}</span>
-            </label>
-          ))}
-        </fieldset>
-        <div className="h-px bg-hairline" />
-        <fieldset className="grid gap-2">
-          <legend className="t-12 mb-2 text-fg-2">Leave type</legend>
-          {LEAVE_TYPES.map((t) => (
-            <label key={t} className="t-14 flex cursor-pointer items-center gap-2.5 text-fg">
-              <Checkbox
-                checked={filters.types.includes(t)}
-                onCheckedChange={() => onChange({ ...filters, types: toggle(filters.types, t) })}
-              />
-              {t}
-            </label>
-          ))}
-        </fieldset>
-        <Button size="sm" disabled={!active} onClick={() => onChange(DEFAULT_FILTERS)} className="justify-center">
-          Reset filters
-        </Button>
-      </PopoverContent>
-    </Popover>
   );
 }

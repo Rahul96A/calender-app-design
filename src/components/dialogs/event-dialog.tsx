@@ -112,7 +112,7 @@ function EventForm({
           />
         </Field>
 
-        <div className="grid grid-cols-[1.4fr_1fr_1fr] items-end gap-3">
+        <div className="grid grid-cols-[1.4fr_1fr_1fr] items-end gap-3 max-sm:grid-cols-2 max-sm:[&>*:first-child]:col-span-2">
           <Field label="Date" htmlFor="ev-date">
             <Input id="ev-date" type="date" required value={draft.date} onChange={(e) => set("date", e.target.value)} />
           </Field>

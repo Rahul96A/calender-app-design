@@ -311,6 +311,16 @@
   scrollbar-color: var(--border-hairline) transparent;
 }
 
+/* iOS zooms into any field under 16px on focus — keep touch inputs at 16px.
+   Unlayered on purpose so it wins over the t-14 utility. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

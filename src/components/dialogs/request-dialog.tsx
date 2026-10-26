@@ -143,7 +143,7 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
             </Field>
           </div>
         ) : (
-          <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3">
+          <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-sm:grid-cols-2 max-sm:[&>*:first-child]:col-span-2">
             <Field label="Date" htmlFor="rq-date">
               <Input id="rq-date" type="date" required value={form.from} onChange={(e) => set("from", e.target.value)} />
             </Field>

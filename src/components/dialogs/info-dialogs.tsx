@@ -93,7 +93,7 @@ export function HolidaysDialog({ open, onClose }: BaseProps) {
         </ScrollArea>
         {adding ? (
           <form
-            className="grid grid-cols-[1fr_1.3fr_auto] gap-2"
+            className="grid grid-cols-[1fr_1.3fr_auto] gap-2 max-sm:grid-cols-[1fr_auto] max-sm:[&>*:first-child]:col-span-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (!date || !name.trim()) return;
