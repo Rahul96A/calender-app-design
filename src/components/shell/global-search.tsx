@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDaysIcon, CalendarPlusIcon, FileTextIcon, MoonIcon, PlaneIcon, ReceiptIcon, SunIcon } from "lucide-react";
 import { Icon } from "@/components/icon";
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -41,6 +42,13 @@ export function GlobalSearchTrigger() {
 export function GlobalSearch() {
   const router = useRouter();
   const open = useOverlayStore((s) => s.overlay.kind === "search");
+  const [query, setQuery] = useState("");
+  const [wasOpen, setWasOpen] = useState(open);
+  // Start every search fresh (derived during render, no effect needed).
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setQuery("");
+  }
   const close = useOverlayStore((s) => s.close);
   const events = useAppStore((s) => s.events);
   const requests = useAppStore((s) => s.requests);
@@ -86,88 +94,91 @@ export function GlobalSearch() {
       description="Search pages, events, requests and documents"
       className="data-open:animate-none data-closed:animate-none sm:max-w-[560px]"
     >
-      <CommandInput placeholder="Search events, requests, documents…" />
-      <CommandList className="max-h-[380px]">
-        <CommandEmpty className="t-14 text-fg-2">No results found.</CommandEmpty>
-        <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => run(() => openOverlay({ kind: "request" }))}>
-            <PlaneIcon /> Request time-off
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => openOverlay({ kind: "event", date: today }))}>
-            <CalendarPlusIcon /> New event
-            <CommandShortcut>N</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => showInCalendar(today))}>
-            <CalendarDaysIcon /> Go to today
-            <CommandShortcut>T</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}>
-            {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />} Toggle dark mode
-          </CommandItem>
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Pages">
-          {ALL_PAGES.map((p) => (
-            <CommandItem key={p.href} value={`page ${p.label}`} onSelect={() => run(() => router.push(p.href))}>
-              <Icon name={p.icon} /> {p.label}
+      {/* cmdk needs a <Command> root around its input and list. */}
+      <Command>
+        <CommandInput value={query} onValueChange={setQuery} placeholder="Search events, requests, documents…" />
+        <CommandList className="max-h-[380px]">
+          <CommandEmpty className="t-14 text-fg-2">No results found.</CommandEmpty>
+          <CommandGroup heading="Actions">
+            <CommandItem onSelect={() => run(() => openOverlay({ kind: "request" }))}>
+              <PlaneIcon /> Request time-off
             </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Events">
-          {sortedEvents.map((e) => (
-            <CommandItem
-              key={e.id}
-              value={`event ${e.title} ${e.note ?? ""} ${formatLong(e.date)} ${e.id}`}
-              onSelect={() => run(() => showInCalendar(e.date, e.id))}
-            >
-              <span className="size-2 shrink-0 rounded-full" style={{ background: `var(--event-${e.color}-fg)` }} />
-              <span className="min-w-0 flex-1 truncate">{e.title}</span>
-              <CommandShortcut className="tracking-normal">
-                {formatShort(e.date)}
-                {!e.allDay && ` · ${formatTimeRange(e.start, e.end, timeFormat)}`}
-              </CommandShortcut>
+            <CommandItem onSelect={() => run(() => openOverlay({ kind: "event", date: today }))}>
+              <CalendarPlusIcon /> New event
+              <CommandShortcut>N</CommandShortcut>
             </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Leave requests">
-          {requests.map((r) => (
-            <CommandItem
-              key={r.id}
-              value={`request ${r.type} ${r.status} ${r.notes} ${formatLong(r.from)} ${r.id}`}
-              onSelect={() => run(() => openOverlay({ kind: "request-details", requestId: r.id }))}
-            >
-              <PlaneIcon />
-              <span className="min-w-0 flex-1 truncate">
-                {r.type} · {r.notes}
-              </span>
-              <CommandShortcut className="tracking-normal capitalize">{r.status}</CommandShortcut>
+            <CommandItem onSelect={() => run(() => showInCalendar(today))}>
+              <CalendarDaysIcon /> Go to today
+              <CommandShortcut>T</CommandShortcut>
             </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Documents">
-          {documents.map((d) => (
-            <CommandItem key={d.id} value={`document ${d.name} ${d.category} ${d.id}`} onSelect={() => run(() => router.push("/documents"))}>
-              <FileTextIcon />
-              <span className="min-w-0 flex-1 truncate">{d.name}</span>
-              <CommandShortcut className="tracking-normal">{d.category}</CommandShortcut>
+            <CommandItem onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}>
+              {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />} Toggle dark mode
             </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Invoices">
-          {invoices.map((i) => (
-            <CommandItem key={i.id} value={`invoice ${i.number} ${i.client} ${i.id}`} onSelect={() => run(() => router.push(`/invoice?open=${i.id}`))}>
-              <ReceiptIcon />
-              <span className="min-w-0 flex-1 truncate">
-                {i.number} · {i.client}
-              </span>
-              <CommandShortcut className="tracking-normal capitalize">{i.status}</CommandShortcut>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </CommandList>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Pages">
+            {ALL_PAGES.map((p) => (
+              <CommandItem key={p.href} value={`page ${p.label}`} onSelect={() => run(() => router.push(p.href))}>
+                <Icon name={p.icon} /> {p.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Events">
+            {sortedEvents.map((e) => (
+              <CommandItem
+                key={e.id}
+                value={`event ${e.title} ${e.note ?? ""} ${formatLong(e.date)} ${e.id}`}
+                onSelect={() => run(() => showInCalendar(e.date, e.id))}
+              >
+                <span className="size-2 shrink-0 rounded-full" style={{ background: `var(--event-${e.color}-fg)` }} />
+                <span className="min-w-0 flex-1 truncate">{e.title}</span>
+                <CommandShortcut className="tracking-normal">
+                  {formatShort(e.date)}
+                  {!e.allDay && ` · ${formatTimeRange(e.start, e.end, timeFormat)}`}
+                </CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Leave requests">
+            {requests.map((r) => (
+              <CommandItem
+                key={r.id}
+                value={`request ${r.type} ${r.status} ${r.notes} ${formatLong(r.from)} ${r.id}`}
+                onSelect={() => run(() => openOverlay({ kind: "request-details", requestId: r.id }))}
+              >
+                <PlaneIcon />
+                <span className="min-w-0 flex-1 truncate">
+                  {r.type} · {r.notes}
+                </span>
+                <CommandShortcut className="tracking-normal capitalize">{r.status}</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Documents">
+            {documents.map((d) => (
+              <CommandItem key={d.id} value={`document ${d.name} ${d.category} ${d.id}`} onSelect={() => run(() => router.push("/documents"))}>
+                <FileTextIcon />
+                <span className="min-w-0 flex-1 truncate">{d.name}</span>
+                <CommandShortcut className="tracking-normal">{d.category}</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandGroup heading="Invoices">
+            {invoices.map((i) => (
+              <CommandItem key={i.id} value={`invoice ${i.number} ${i.client} ${i.id}`} onSelect={() => run(() => router.push(`/invoice?open=${i.id}`))}>
+                <ReceiptIcon />
+                <span className="min-w-0 flex-1 truncate">
+                  {i.number} · {i.client}
+                </span>
+                <CommandShortcut className="tracking-normal capitalize">{i.status}</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
     </CommandDialog>
   );
 }
