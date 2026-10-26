@@ -1,4 +1,4 @@
-# Kargul Calender design prototype
+# Kargul Calender Design Prototype
 
 A design prototype of **Kargul Workspace**, a people-ops workspace built from the
 "Dashboard – calendar" Figma design. Live at https://calender-app-design.vercel.app.
