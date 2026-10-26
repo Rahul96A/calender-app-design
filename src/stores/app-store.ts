@@ -143,9 +143,96 @@ const safeLocalStorage = {
 const whenLabel = (from: string, to: string) =>
   from === to ? formatShort(from) : `${formatShort(from)} – ${formatShort(to)}`;
 
+// ------------------------------------------------------------------
+// Undo / redo history
+// Every change to user data records a snapshot of the previous data, so
+// ⌘Z / Ctrl+Z can step back through any edit. Notifications, the running
+// timer and rehydration from storage are not recorded.
+// ------------------------------------------------------------------
+const TRACKED = [
+  "workspaceId",
+  "workspaces",
+  "events",
+  "requests",
+  "holidays",
+  "profile",
+  "settings",
+  "documents",
+  "timeEntries",
+  "invoices",
+  "withdrawalMethods",
+  "benefits",
+] as const satisfies readonly (keyof AppState)[];
+type TrackedKey = (typeof TRACKED)[number];
+type Snapshot = Pick<AppState, TrackedKey>;
+type HistoryEntry = { snapshot: Snapshot; label: string };
+
+const HISTORY_LIMIT = 100;
+const past: HistoryEntry[] = [];
+let future: HistoryEntry[] = [];
+
+const KEY_LABELS: Record<TrackedKey, string> = {
+  workspaceId: "Workspace",
+  workspaces: "Workspace",
+  events: "Calendar",
+  requests: "Leave request",
+  holidays: "Holidays",
+  profile: "Profile",
+  settings: "Settings",
+  documents: "Documents",
+  timeEntries: "Time tracking",
+  invoices: "Invoices",
+  withdrawalMethods: "Payout methods",
+  benefits: "Benefits",
+};
+
+function snapshotOf(state: AppState): Snapshot {
+  const snap = {} as Record<TrackedKey, unknown>;
+  for (const key of TRACKED) snap[key] = state[key];
+  return snap as Snapshot;
+}
+
+function labelFor(keys: TrackedKey[]): string {
+  // Leave requests also touch events; name the more specific thing.
+  if (keys.includes("requests")) return KEY_LABELS.requests;
+  return [...new Set(keys.map((k) => KEY_LABELS[k]))].join(" & ");
+}
+
+/** Reverts the last recorded change. Returns what was undone, or null. */
+export function undo(): string | null {
+  const entry = past.pop();
+  if (!entry) return null;
+  future.push({ snapshot: snapshotOf(useAppStore.getState()), label: entry.label });
+  useAppStore.setState(entry.snapshot);
+  return entry.label;
+}
+
+/** Re-applies the last undone change. Returns what was redone, or null. */
+export function redo(): string | null {
+  const entry = future.pop();
+  if (!entry) return null;
+  past.push({ snapshot: snapshotOf(useAppStore.getState()), label: entry.label });
+  useAppStore.setState(entry.snapshot);
+  return entry.label;
+}
+
 export const useAppStore = create<AppStore>()(
   persist(
-    (set, get) => ({
+    (rawSet, get) => {
+      // Records history for any update that changes tracked data.
+      const set = ((partial: unknown, replace?: boolean) => {
+        const state = get();
+        const next = (typeof partial === "function" ? partial(state) : partial) as Partial<AppState> | null;
+        const changed = TRACKED.filter((k) => next && k in next && next[k] !== state[k]);
+        if (changed.length) {
+          past.push({ snapshot: snapshotOf(state), label: labelFor(changed) });
+          if (past.length > HISTORY_LIMIT) past.shift();
+          future = [];
+        }
+        (rawSet as (p: unknown, r?: boolean) => void)(next, replace);
+      }) as typeof rawSet;
+
+      return {
       ...createSeed(),
 
       // ------------------------------------------------------------ workspace
@@ -395,7 +482,8 @@ export const useAppStore = create<AppStore>()(
         set(createSeed());
         toast.success("Demo data restored");
       },
-    }),
+    };
+    },
     {
       name: "calendar-app:state",
       version: STATE_VERSION,
