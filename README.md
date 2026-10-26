@@ -1,4 +1,4 @@
-# Workspace — Time off & calendar
+# Kargul — Time off & calendar
 
 A people-ops workspace built from the "Dashboard – calendar" Figma design. The
 **Time off** page (`/time-off`, the default route) reproduces the design

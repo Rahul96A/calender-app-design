@@ -402,6 +402,14 @@ export const useAppStore = create<AppStore>()(
       storage: createJSONStorage(() => safeLocalStorage),
       // Hydrate after mount so the server-rendered markup (the seed) matches.
       skipHydration: true,
+      migrate: (persisted, version) => {
+        const s = persisted as AppState;
+        // v2: the main workspace was renamed from "Workspace" to "Kargul".
+        if (version < 2) {
+          s.workspaces = s.workspaces.map((w) => (w.id === "ws-main" && w.name === "Workspace" ? { ...w, name: "Kargul" } : w));
+        }
+        return { ...s, version: STATE_VERSION };
+      },
       partialize: (s) => {
         const data: Partial<AppStore> = {};
         for (const [k, v] of Object.entries(s)) if (typeof v !== "function") (data as Record<string, unknown>)[k] = v;
@@ -413,4 +421,4 @@ export const useAppStore = create<AppStore>()(
 
 /** Read-only selector for the active workspace name. */
 export const selectWorkspaceName = (s: AppStore) =>
-  s.workspaces.find((w) => w.id === s.workspaceId)?.name ?? "Workspace";
+  s.workspaces.find((w) => w.id === s.workspaceId)?.name ?? "Kargul";

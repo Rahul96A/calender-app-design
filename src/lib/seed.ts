@@ -6,7 +6,7 @@ export const DESIGN_DATE = "2026-11-10";
 /** Used only for server rendering; the browser swaps in the real date on hydration. */
 export const SERVER_TODAY = "2026-10-26";
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
 
@@ -15,7 +15,7 @@ export function createSeed(): AppState {
     version: STATE_VERSION,
     workspaceId: "ws-main",
     workspaces: [
-      { id: "ws-main", name: "Workspace" },
+      { id: "ws-main", name: "Kargul" },
       { id: "ws-acme", name: "Acme Studio" },
       { id: "ws-personal", name: "Personal" },
     ],
