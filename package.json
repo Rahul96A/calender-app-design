@@ -38,6 +38,6 @@
     "vitest": "^5.0.5"
   },
   "license": "MIT",
-  "description": "Kargul Workspace — a calm people-ops workspace for time off, calendars and leave requests.",
+  "description": "Kargul Calender design prototype — a calm people-ops workspace for time off, calendars and leave requests.",
   "author": "Kargul Studio <dev@kargul.studio> (https://kargul.studio)"
 }

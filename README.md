@@ -1,7 +1,9 @@
-# Kargul Workspace — Time off & calendar
+# Kargul Calender design prototype
 
-A people-ops workspace built from the "Dashboard – calendar" Figma design. The
-**Time off** page (`/time-off`, the default route) reproduces the design
+A design prototype of **Kargul Workspace**, a people-ops workspace built from the
+"Dashboard – calendar" Figma design. Live at https://calender-app-design.vercel.app.
+
+The **Time off** page (`/time-off`, the default route) reproduces the design
 pixel-for-pixel; every other page in the sidebar is built in the same visual
 language. Everything runs in the browser — there is no backend; data persists
 to `localStorage`.
