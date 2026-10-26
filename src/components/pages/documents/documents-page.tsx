@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Field } from "@/components/dialogs/field";
+import { FilterMenu, type FilterGroup } from "@/components/filter-menu";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,6 +50,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatLong, formatShort } from "@/lib/dates";
 import type { DocCategory, DocumentFile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-media-query";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { EmptyState, PageHeader, PageRoot } from "@/components/pages/shared/page-chrome";
@@ -67,6 +69,13 @@ const CATEGORY_COLOR: Record<DocCategory, string | null> = {
 
 type Filter = "all" | "starred" | DocCategory;
 type Sort = "newest" | "oldest" | "name" | "size";
+
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "name", label: "Name" },
+  { value: "size", label: "Size" },
+];
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -145,6 +154,7 @@ export function DocumentsPage() {
   const documents = useAppStore((s) => s.documents);
   const addDocument = useAppStore((s) => s.addDocument);
 
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("newest");
@@ -212,6 +222,31 @@ export function DocumentsPage() {
 
   const hasFilters = query.trim() !== "" || filter !== "all";
 
+  // Phones fold the category tabs and the sort select into one filter sheet.
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "show",
+      label: "Show",
+      type: "single",
+      options: (["all", "starred", ...CATEGORIES] as Filter[]).map((f) => ({
+        value: f,
+        label: `${f === "all" ? "All" : f === "starred" ? "Starred" : f} · ${counts[f] ?? 0}`,
+        adornment: f === "starred" ? <StarIcon className="size-3.5 text-warning" /> : undefined,
+      })),
+      value: filter,
+      onChange: (v) => setFilter(v as Filter),
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      type: "single",
+      options: SORTS,
+      value: sort,
+      onChange: (v) => setSort(v as Sort),
+    },
+  ];
+  const activeFilters = Number(filter !== "all") + Number(sort !== "newest");
+
   return (
     <PageRoot
       className="relative bg-surface"
@@ -256,8 +291,8 @@ export function DocumentsPage() {
       />
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-3">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)} className="min-w-0">
+      <div className="z-10 flex flex-wrap items-center gap-2 border-b border-hairline bg-surface px-4 py-3 max-md:sticky max-md:top-0 max-md:py-2.5">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)} className="min-w-0 max-md:hidden">
           <TabsList className="h-[30px]">
             {(["all", "starred", ...CATEGORIES] as Filter[]).map((f) => (
               <TabsTrigger key={f} value={f} className="t-14 salt gap-1.5 px-2 text-[14px] data-active:text-fg">
@@ -267,29 +302,41 @@ export function DocumentsPage() {
             ))}
           </TabsList>
         </Tabs>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
+        <div className="ml-auto flex items-center gap-2 max-md:ml-0 max-md:w-full">
+          <div className="relative max-md:min-w-0 max-md:flex-1">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-icon" />
             <Input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search documents"
+              placeholder={isMobile ? "Search" : "Search documents"}
               aria-label="Search documents"
-              className="h-[30px] w-52 pl-8"
+              className="h-[30px] w-52 pl-8 max-md:h-10 max-md:w-full max-md:text-[16px]"
             />
           </div>
           <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-            <SelectTrigger className="h-[30px]! w-[124px]" aria-label="Sort by">
+            <SelectTrigger className="h-[30px]! w-[124px] max-md:hidden" aria-label="Sort by">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="size">Size</SelectItem>
+              {SORTS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          <div className="md:hidden">
+            <FilterMenu
+              groups={filterGroups}
+              activeCount={activeFilters}
+              onReset={() => {
+                setFilter("all");
+                setSort("newest");
+              }}
+              className="h-10"
+            />
+          </div>
           <div className="flex items-center rounded-lg border border-control p-0.5" role="group" aria-label="Layout">
             {(
               [
@@ -305,7 +352,7 @@ export function DocumentsPage() {
                     aria-pressed={view === v}
                     onClick={() => setView(v)}
                     className={cn(
-                      "flex size-6 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40",
+                      "flex size-6 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40 max-md:size-[34px]",
                       view === v ? "bg-selected text-fg" : "text-icon hover-fine:text-fg",
                     )}
                   >
@@ -355,7 +402,10 @@ export function DocumentsPage() {
           }
         />
       ) : view === "list" ? (
-        <DocumentTable docs={visible} today={today} onRename={setRenaming} />
+        <>
+          <DocumentTable docs={visible} today={today} onRename={setRenaming} />
+          <DocumentList docs={visible} today={today} onRename={setRenaming} />
+        </>
       ) : (
         <DocumentGrid docs={visible} today={today} onRename={setRenaming} />
       )}
@@ -381,7 +431,7 @@ function uploadedLabel(iso: string, today: string) {
   return day.slice(0, 4) === today.slice(0, 4) ? formatShort(day) : formatLong(day);
 }
 
-function StarButton({ doc }: { doc: DocumentFile }) {
+function StarButton({ doc, className }: { doc: DocumentFile; className?: string }) {
   const updateDocument = useAppStore((s) => s.updateDocument);
   return (
     <Button
@@ -393,32 +443,49 @@ function StarButton({ doc }: { doc: DocumentFile }) {
         e.stopPropagation();
         updateDocument(doc.id, { starred: !doc.starred });
       }}
-      className={cn(doc.starred && "text-warning hover-fine:text-warning")}
+      className={cn(doc.starred && "text-warning hover-fine:text-warning", className)}
     >
       <StarIcon className={cn(doc.starred && "fill-current")} />
     </Button>
   );
 }
 
-function RowMenu({ doc, onRename }: { doc: DocumentFile; onRename: (d: DocumentFile) => void }) {
+/** Menu rows grow to 40px on phones. */
+const MENU_ITEM = "max-md:min-h-10";
+
+function RowMenu({
+  doc,
+  onRename,
+  className,
+}: {
+  doc: DocumentFile;
+  onRename: (d: DocumentFile) => void;
+  className?: string;
+}) {
   const updateDocument = useAppStore((s) => s.updateDocument);
   const deleteDocument = useAppStore((s) => s.deleteDocument);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${doc.name}`} onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`More actions for ${doc.name}`}
+          onClick={(e) => e.stopPropagation()}
+          className={className}
+        >
           <MoreHorizontalIcon />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem onSelect={() => downloadDoc(doc)}>
+        <DropdownMenuItem className={MENU_ITEM} onSelect={() => downloadDoc(doc)}>
           <DownloadIcon /> Download
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onRename(doc)}>
+        <DropdownMenuItem className={MENU_ITEM} onSelect={() => onRename(doc)}>
           <PencilIcon /> Rename
         </DropdownMenuItem>
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="t-14 salt gap-1.5 [&_svg]:text-icon">
+          <DropdownMenuSubTrigger className={cn("t-14 salt gap-1.5 [&_svg]:text-icon", MENU_ITEM)}>
             <FolderInputIcon className="size-3.5" /> Move to
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-40">
@@ -430,7 +497,7 @@ function RowMenu({ doc, onRename }: { doc: DocumentFile; onRename: (d: DocumentF
               }}
             >
               {CATEGORIES.map((c) => (
-                <DropdownMenuRadioItem key={c} value={c} className="t-14">
+                <DropdownMenuRadioItem key={c} value={c} className={cn("t-14", MENU_ITEM)}>
                   {c}
                 </DropdownMenuRadioItem>
               ))}
@@ -438,7 +505,7 @@ function RowMenu({ doc, onRename }: { doc: DocumentFile; onRename: (d: DocumentF
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={() => deleteDocument(doc.id)}>
+        <DropdownMenuItem variant="destructive" className={MENU_ITEM} onSelect={() => deleteDocument(doc.id)}>
           <Trash2Icon /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -450,7 +517,7 @@ type ViewProps = { docs: DocumentFile[]; today: string; onRename: (d: DocumentFi
 
 function DocumentTable({ docs, today, onRename }: ViewProps) {
   return (
-    <table className="w-full table-fixed border-collapse">
+    <table className="w-full table-fixed border-collapse max-md:hidden">
       <thead>
         <tr className="h-10 bg-app">
           <th className="t-14 pl-4 text-left font-medium text-fg-2">Name</th>
@@ -506,9 +573,41 @@ function DocumentTable({ docs, today, onRename }: ViewProps) {
   );
 }
 
+/** Phones: the table becomes a list — tap a row to open the file, star and menu stay visible. */
+function DocumentList({ docs, today, onRename }: ViewProps) {
+  return (
+    <ul className="divide-y divide-subtle border-b border-subtle md:hidden">
+      {docs.map((d) => (
+        <li key={d.id} className="flex items-center pr-2">
+          <button
+            type="button"
+            onClick={() => downloadDoc(d)}
+            className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left outline-none transition-colors duration-150 focus-visible:bg-hover active:bg-hover"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-app text-icon">
+              <DocGlyph name={d.name} className="size-4" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="t-14 truncate text-table">{d.name}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <CategoryBadge category={d.category} />
+                <span className="t-12 truncate text-fg-2">
+                  {formatSize(d.size)} · {uploadedLabel(d.uploadedAt, today)}
+                </span>
+              </span>
+            </span>
+          </button>
+          <StarButton doc={d} className="size-10" />
+          <RowMenu doc={d} onRename={onRename} className="size-10" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function DocumentGrid({ docs, today, onRename }: ViewProps) {
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 p-4">
+    <ul className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
       {docs.map((d) => (
         <li
           key={d.id}
@@ -533,8 +632,8 @@ function DocumentGrid({ docs, today, onRename }: ViewProps) {
               <CategoryBadge category={d.category} />
             </div>
             <div className="-mt-1 flex flex-col">
-              <StarButton doc={d} />
-              <RowMenu doc={d} onRename={onRename} />
+              <StarButton doc={d} className="max-md:size-8" />
+              <RowMenu doc={d} onRename={onRename} className="max-md:size-8" />
             </div>
           </div>
         </li>
@@ -589,15 +688,17 @@ function RenameForm({ doc, onDone }: { doc: DocumentFile; onDone: () => void }) 
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => setValue(e.target.value)}
             aria-invalid={error ? true : undefined}
+            className="max-md:h-10 max-md:text-[16px]"
           />
           {ext ? <span className="t-14 shrink-0 text-fg-2">{ext}</span> : null}
         </div>
       </Field>
-      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3">
-        <Button type="button" onClick={onDone}>
+      {/* On phones the sheet pads for the home indicator; the footer absorbs that padding. */}
+      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3 max-sm:mb-[calc(-1*max(1.25rem,env(safe-area-inset-bottom)))] max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <Button type="button" onClick={onDone} className="max-sm:h-10">
           Cancel
         </Button>
-        <Button type="submit" variant="brand" disabled={!!error}>
+        <Button type="submit" variant="brand" disabled={!!error} className="max-sm:h-10">
           Rename
         </Button>
       </DialogFooter>
