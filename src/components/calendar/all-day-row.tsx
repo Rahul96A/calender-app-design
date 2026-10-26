@@ -37,7 +37,7 @@ export function AllDayRow({ days }: { days: string[] }) {
 
   return (
     <div className="flex w-full shrink-0 items-stretch overflow-hidden border-b border-hairline" style={{ height }}>
-      <div className="flex w-(--axis) shrink-0 items-center justify-end pr-3 max-md:pr-1.5">
+      <div className="sticky left-0 z-10 flex w-(--axis) shrink-0 items-center justify-end bg-surface pr-3 max-md:pr-1.5">
         {most > 1 && <span className="t-12 text-placeholder max-md:text-[10px]">All day</span>}
       </div>
       {days.map((day, i) => (

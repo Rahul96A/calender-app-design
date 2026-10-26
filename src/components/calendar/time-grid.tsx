@@ -28,6 +28,8 @@ const DRAG_THRESHOLD = 4;
 const LONG_PRESS_MS = 350;
 /** Touch: a horizontal flick this long switches to the previous/next period. */
 const SWIPE_DISTANCE = 64;
+/** Columns never get narrower than this; below it the week scrolls sideways. */
+const MIN_COLUMN = 96;
 
 type Drag =
   | { type: "create"; dayIndex: number; anchor: number; current: number; moved: boolean }
@@ -50,7 +52,7 @@ export function DayHeaders({ days }: { days: string[] }) {
 
   return (
     <div className="flex h-14 w-full shrink-0 items-start overflow-hidden border-b border-hairline">
-      <div className="h-full w-(--axis) shrink-0" />
+      <div className="sticky left-0 z-10 h-full w-(--axis) shrink-0 bg-surface" />
       {days.map((d) => {
         const isSelected = d === selected;
         const isToday = d === today;
@@ -164,6 +166,23 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
   useLayoutEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = dayStartHour * HOUR_HEIGHT;
   }, [dayStartHour]);
+
+  // When the week is wider than the screen, keep the selected day in view.
+  const selectedDate = useCalendarStore((s) => s.date);
+  const didScrollX = useRef(false);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    const index = days.indexOf(selectedDate);
+    if (index < 0) return;
+    const axis = parseFloat(getComputedStyle(el).getPropertyValue("--axis")) || 0;
+    const col = (el.scrollWidth - axis) / days.length;
+    const visible = el.clientWidth - axis;
+    const left = index * col;
+    if (left >= el.scrollLeft && left + col <= el.scrollLeft + visible) return;
+    el.scrollTo({ left: Math.max(0, left - (visible - col) / 2), behavior: didScrollX.current ? "smooth" : "auto" });
+    didScrollX.current = true;
+  }, [days, selectedDate]);
 
   // Scroll a searched-for event into view and pulse it once.
   useEffect(() => {
@@ -294,7 +313,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
     if (t.lifted) return false; // a lifted event finishes like a mouse drag below
     const dx = e.clientX - t.x;
     const dy = e.clientY - t.y;
-    if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dy) < Math.abs(dx) * 0.6 && e.timeStamp - t.t < 600) {
+    if (days.length === 1 && Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dy) < Math.abs(dx) * 0.6 && e.timeStamp - t.t < 600) {
       step(dx < 0 ? 1 : -1);
     } else if (Math.hypot(dx, dy) < 8) {
       if (t.eventEl) {
@@ -355,109 +374,116 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
 
   return (
     <>
-      {strip ? (
-        <>
-          <WeekStrip days={strip} />
-          <div className="max-md:hidden">
-            <DayHeaders days={days} />
-          </div>
-        </>
-      ) : (
-        <DayHeaders days={days} />
-      )}
-      <AllDayRow days={days} />
+      {strip && <WeekStrip days={strip} />}
+      {/* One scroller for both axes: day headers stick to the top, the time axis to the left. */}
       <div
         ref={scrollRef}
         onScroll={() => useCalendarStore.getState().popover && useCalendarStore.getState().closePopover()}
-        className="relative min-h-0 w-full flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative min-h-0 w-full flex-1 overflow-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {/* Masks the line/label that sits exactly on the top edge when scrolled to an hour. */}
-        <div className="pointer-events-none sticky top-0 z-20 h-0 w-full" aria-hidden>
-          <div className="absolute top-0 left-0 h-2 w-(--axis) bg-surface" />
-          <div className="absolute top-0 right-0 left-(--axis) h-px bg-surface" />
-        </div>
-        <div className="relative flex w-full" style={{ height: 24 * HOUR_HEIGHT }}>
-
-          {/* Hour lines */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 left-(--axis)" aria-hidden>
-            {HOURS.map((h) => (
-              <div key={h} className="absolute inset-x-0 h-px bg-hairline" style={{ top: h * HOUR_HEIGHT }} />
-            ))}
+        <div
+          className="relative flex min-w-full flex-col"
+          style={{ width: `max(100%, calc(var(--axis) + ${days.length * MIN_COLUMN}px))` }}
+        >
+          <div className="sticky top-0 z-40 bg-surface">
+            <div className={strip ? "max-md:hidden" : undefined}>
+              <DayHeaders days={days} />
+            </div>
+            <AllDayRow days={days} />
+            {/* Masks the line/label that sits exactly on the header edge when scrolled to an hour. */}
+            <div className="pointer-events-none absolute inset-x-0 top-full h-2" aria-hidden>
+              <div className="absolute inset-x-0 top-0 h-px bg-surface" />
+              <div className="sticky left-0 h-2 w-(--axis) bg-surface" />
+            </div>
           </div>
 
-          {/* Time axis */}
-          <div className="relative h-full w-(--axis) shrink-0 select-none" aria-hidden>
-            {HOURS.map((h) => (
-              <span
-                key={h}
-                className="t-14 absolute right-3 whitespace-nowrap text-fg-2 max-md:right-1.5 max-md:text-[11px] max-md:tracking-normal"
-                style={{ top: h * HOUR_HEIGHT - 7 }}
-              >
-                {formatTime(h * 60, timeFormat).replace(":00 ", " ")}
-              </span>
-            ))}
-          </div>
+          <div className="relative flex w-full" style={{ height: 24 * HOUR_HEIGHT }}>
+            {/* Hour lines */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 left-(--axis)" aria-hidden>
+              {HOURS.map((h) => (
+                <div key={h} className="absolute inset-x-0 h-px bg-hairline" style={{ top: h * HOUR_HEIGHT }} />
+              ))}
+            </div>
 
-          {/* Day columns */}
-          <div
-            ref={bodyRef}
-            className={cn("relative flex h-full min-w-0 flex-1 touch-pan-y select-none", drag?.moved && drag.type === "move" && !drag.locked && "cursor-grabbing")}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={() => {
-              if (touch.current?.timer) clearTimeout(touch.current.timer);
-              touch.current = null;
-              dragActive.current = false;
-              setDrag(null);
-            }}
-          >
-            {days.map((day, i) => (
-              <div
-                key={day}
-                className="relative h-full min-w-0 flex-1 border-l border-hairline"
-                aria-label={`${fromKey(day).toDateString()} schedule`}
-                role="group"
-              >
-                {columns[i].map(({ event, column, columns: count }) => (
-                  <EventBlock
-                    key={event.id}
-                    event={event}
-                    column={column}
-                    count={count}
-                    timeFormat={timeFormat}
-                    dragging={Boolean(drag && drag.type !== "create" && drag.eventId === event.id && drag.moved && !drag.locked)}
-                    highlighted={highlightId === event.id}
-                    onOpen={(el) => openPopover("event", event.id, el)}
-                  />
-                ))}
+            {/* Time axis */}
+            <div className="sticky left-0 z-20 h-full w-(--axis) shrink-0 bg-surface select-none" aria-hidden>
+              {HOURS.map((h) => (
+                <span
+                  key={h}
+                  className="t-14 absolute right-3 whitespace-nowrap text-fg-2 max-md:right-1.5 max-md:text-[11px] max-md:tracking-normal"
+                  style={{ top: h * HOUR_HEIGHT - 7 }}
+                >
+                  {formatTime(h * 60, timeFormat).replace(":00 ", " ")}
+                </span>
+              ))}
+            </div>
 
-                {createGhost?.dayIndex === i && (
-                  <div
-                    className="pointer-events-none absolute z-20 flex flex-col gap-0.5 overflow-hidden rounded-lg border border-dashed border-brand/60 bg-brand-tint p-2 text-brand"
-                    style={{
-                      top: minutesToPx(createGhost.start) + 1,
-                      height: Math.max(minutesToPx(createGhost.end - createGhost.start) - 2, 14),
-                      left: 2,
-                      right: 3,
-                    }}
-                  >
-                    <span className="t-12 salt">{formatTimeRange(createGhost.start, createGhost.end, timeFormat)}</span>
-                  </div>
-                )}
+            {/* Day columns */}
+            <div
+              ref={bodyRef}
+              className={cn(
+                "relative flex h-full min-w-0 flex-1 select-none",
+                // Day view keeps vertical-only panning so a sideways flick changes day.
+                days.length === 1 ? "touch-pan-y" : "touch-manipulation",
+                drag?.moved && drag.type === "move" && !drag.locked && "cursor-grabbing",
+              )}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={() => {
+                if (touch.current?.timer) clearTimeout(touch.current.timer);
+                touch.current = null;
+                dragActive.current = false;
+                setDrag(null);
+              }}
+            >
+              {days.map((day, i) => (
+                <div
+                  key={day}
+                  className="relative h-full min-w-0 flex-1 border-l border-hairline"
+                  aria-label={`${fromKey(day).toDateString()} schedule`}
+                  role="group"
+                >
+                  {columns[i].map(({ event, column, columns: count }) => (
+                    <EventBlock
+                      key={event.id}
+                      event={event}
+                      column={column}
+                      count={count}
+                      timeFormat={timeFormat}
+                      dragging={Boolean(drag && drag.type !== "create" && drag.eventId === event.id && drag.moved && !drag.locked)}
+                      highlighted={highlightId === event.id}
+                      onOpen={(el) => openPopover("event", event.id, el)}
+                    />
+                  ))}
 
-                {i === todayIndex && nowMinutes >= 0 && nowMinutes <= 1440 && (
-                  <div
-                    className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
-                    style={{ top: minutesToPx(nowMinutes) - 4 }}
-                    aria-label={`Now, ${formatTime(Math.floor(nowMinutes), timeFormat)}`}
-                  >
-                    <span className="-ml-1 size-2 rounded-full bg-brand" />
-                    <span className="h-[1.5px] flex-1 bg-brand" />
-                  </div>
-                )}
-              </div>
-            ))}
+                  {createGhost?.dayIndex === i && (
+                    <div
+                      className="pointer-events-none absolute z-20 flex flex-col gap-0.5 overflow-hidden rounded-lg border border-dashed border-brand/60 bg-brand-tint p-2 text-brand"
+                      style={{
+                        top: minutesToPx(createGhost.start) + 1,
+                        height: Math.max(minutesToPx(createGhost.end - createGhost.start) - 2, 14),
+                        left: 2,
+                        right: 3,
+                      }}
+                    >
+                      <span className="t-12 salt">{formatTimeRange(createGhost.start, createGhost.end, timeFormat)}</span>
+                    </div>
+                  )}
+
+                  {i === todayIndex && nowMinutes >= 0 && nowMinutes <= 1440 && (
+                    <div
+                      className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
+                      style={{ top: minutesToPx(nowMinutes) - 4 }}
+                      aria-label={`Now, ${formatTime(Math.floor(nowMinutes), timeFormat)}`}
+                    >
+                      <span className="-ml-1 size-2 rounded-full bg-brand" />
+                      <span className="h-[1.5px] flex-1 bg-brand" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
