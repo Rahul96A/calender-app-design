@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -6,16 +8,28 @@ import { cn } from "@/lib/utils";
  * server and client components alike.
  */
 
-/** Scrollable page root that fills the shell's main area. */
+/** Scrollable page root that fills the shell's main area (clears the home indicator on phones). */
 export function PageRoot({ className, children, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto bg-app", className)} {...props}>
+    <div
+      className={cn(
+        "scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-app pb-[env(safe-area-inset-bottom)]",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
 }
 
-/** 68px section header: title + secondary line on the left, 30px actions on the right. */
+/**
+ * Section header. Desktop/tablet (md+): sticky 68px row — title + secondary
+ * line on the left, 30px actions on the right. Phones: it scrolls away with
+ * the page (the shell's title bar already names the page), the title and
+ * description wrap instead of truncating, actions drop below the title when
+ * they don't fit, and action buttons grow to 40px touch targets.
+ */
 export function PageHeader({
   title,
   description,
@@ -30,15 +44,25 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "sticky top-0 z-10 flex h-[68px] shrink-0 items-center gap-4 border-b border-hairline bg-surface px-4",
+        "z-10 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 border-b border-hairline bg-surface px-4 py-3",
+        "md:sticky md:top-0 md:h-[68px] md:flex-nowrap md:py-0",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h2 className="t-16 truncate text-fg">{title}</h2>
-        {description ? <p className="t-14 truncate text-fg-2">{description}</p> : null}
+      <div className="flex min-w-0 flex-1 basis-40 flex-col gap-2 md:basis-0">
+        <h2 className="t-16 text-pretty text-fg md:truncate">{title}</h2>
+        {description ? <p className="t-14 text-pretty text-fg-2 md:truncate">{description}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div
+          className={cn(
+            "flex shrink-0 items-center gap-2",
+            "max-md:[&_[data-slot=button]]:h-10 max-md:[&_[data-slot=button][data-size=default]]:px-3.5 max-md:[&_[data-slot=button][data-size=icon]]:w-10",
+          )}
+        >
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -52,7 +76,7 @@ export function Card({ className, children, ...props }: React.ComponentProps<"se
   );
 }
 
-/** Card header row: title (+ optional description) with right-aligned actions. */
+/** Card header row: title (+ optional description) with right-aligned actions. Text wraps on phones. */
 export function CardHeader({
   title,
   description,
@@ -67,8 +91,8 @@ export function CardHeader({
   return (
     <header className={cn("flex min-h-[52px] items-center gap-3 border-b border-subtle px-4 py-3", className)}>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3 className="t-14 truncate text-fg">{title}</h3>
-        {description ? <p className="t-12 truncate text-fg-2">{description}</p> : null}
+        <h3 className="t-14 text-pretty text-fg md:truncate">{title}</h3>
+        {description ? <p className="t-12 text-pretty text-fg-2 md:truncate">{description}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
     </header>
@@ -114,4 +138,60 @@ export function StatIcon({ name, size = 20, className }: { name: StatGlyph; size
       style={{ width: size, height: size, backgroundImage: `url(/icons/stat-${name}.svg)` }}
     />
   );
+}
+
+/**
+ * KPI tile: glyph + label, a large value and a hint. Optionally a link (the
+ * whole tile is the tap target; the arrow only appears on real hover). On
+ * phones the label and hint wrap to two lines instead of truncating.
+ */
+export function StatTile({
+  icon,
+  label,
+  value,
+  hint,
+  href,
+}: {
+  icon: StatGlyph;
+  label: string;
+  value: React.ReactNode;
+  hint: React.ReactNode;
+  href?: string;
+}) {
+  const body = (
+    <>
+      <span className="flex items-start gap-2 md:items-center">
+        <StatIcon name={icon} size={16} className="max-md:mt-px" />
+        <span className="t-14 min-w-0 flex-1 text-fg-2 max-md:line-clamp-2 md:truncate">{label}</span>
+        {href ? (
+          <ArrowRightIcon className="hidden size-3.5 shrink-0 text-icon opacity-0 transition-opacity duration-150 group-hover:opacity-100 md:block" />
+        ) : null}
+      </span>
+      <span className="text-[24px] leading-none font-medium tracking-[-0.72px] text-fg md:text-[28px] md:tracking-[-0.84px]">
+        {value}
+      </span>
+      <span className="t-12 text-fg-2 max-md:line-clamp-2 max-md:leading-[1.35] md:truncate">{hint}</span>
+    </>
+  );
+  // Phones: label/value/hint rows are a subgrid, so values line up across a row even when a label wraps.
+  const cls =
+    "group flex min-w-0 flex-col gap-3 rounded-xl border border-hairline bg-surface p-3.5 max-md:row-span-3 max-md:grid max-md:grid-rows-subgrid md:p-4";
+  return href ? (
+    <Link
+      href={href}
+      className={cn(
+        cls,
+        "press outline-none hover-fine:bg-hover focus-visible:ring-2 focus-visible:ring-brand/40",
+      )}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
+
+/** Row of stat tiles: 2-up on phones and tablets, 4-up from xl. */
+export function StatGrid({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn("grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4", className)}>{children}</div>;
 }
