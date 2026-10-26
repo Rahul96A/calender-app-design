@@ -48,6 +48,7 @@ export function DayHeaders({ days }: { days: string[] }) {
   const selected = useCalendarStore((s) => s.date);
   const setDate = useCalendarStore((s) => s.setDate);
   const setView = useCalendarStore((s) => s.setView);
+  const compact = useCalendarStore((s) => s.compact);
   const today = useToday();
 
   return (
@@ -60,7 +61,12 @@ export function DayHeaders({ days }: { days: string[] }) {
           <button
             key={d}
             type="button"
-            onClick={() => (isSelected ? setView("day") : setDate(d))}
+            onClick={() => {
+              if (compact || isSelected) {
+                setDate(d);
+                setView("day");
+              } else setDate(d);
+            }}
             aria-label={`${fromKey(d).toDateString()}${isSelected ? ", selected — open day view" : ""}`}
             aria-pressed={isSelected}
             className="group flex h-full min-w-0 flex-1 items-center gap-2 overflow-hidden border-l border-hairline px-3 text-left outline-none focus-visible:bg-hover max-md:flex-col max-md:justify-center max-md:gap-1 max-md:px-0"
@@ -313,7 +319,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
     if (t.lifted) return false; // a lifted event finishes like a mouse drag below
     const dx = e.clientX - t.x;
     const dy = e.clientY - t.y;
-    if (days.length === 1 && Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dy) < Math.abs(dx) * 0.6 && e.timeStamp - t.t < 600) {
+    if (days.length <= 3 && Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dy) < Math.abs(dx) * 0.6 && e.timeStamp - t.t < 600) {
       step(dx < 0 ? 1 : -1);
     } else if (Math.hypot(dx, dy) < 8) {
       if (t.eventEl) {
@@ -423,8 +429,8 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
               ref={bodyRef}
               className={cn(
                 "relative flex h-full min-w-0 flex-1 select-none",
-                // Day view keeps vertical-only panning so a sideways flick changes day.
-                days.length === 1 ? "touch-pan-y" : "touch-manipulation",
+                // Day and 3-day views pan vertically only, so a sideways flick changes the period.
+                days.length <= 3 ? "touch-pan-y" : "touch-manipulation",
                 drag?.moved && drag.type === "move" && !drag.locked && "cursor-grabbing",
               )}
               onPointerDown={onPointerDown}

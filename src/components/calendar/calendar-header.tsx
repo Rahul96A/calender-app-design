@@ -27,8 +27,10 @@ const VIEWS: { id: CalendarView; label: string; left: number; width: number; key
   { id: "month", label: "Month", left: 101, width: 61, key: "M" },
 ];
 
-function useRangeLabel() {
-  const { view, date } = useCalendarStore();
+function useRangeLabel(visible: string[]) {
+  const view = useCalendarStore((s) => s.view);
+  const date = useCalendarStore((s) => s.date);
+  const compact = useCalendarStore((s) => s.compact);
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
   const year = fromKey(date).getFullYear();
   const title = `${monthName(date)}, ${year}`;
@@ -41,18 +43,24 @@ function useRangeLabel() {
   // ISO weeks start on Monday; for Sunday-first weeks use that Monday.
   const week = isoWeek(weekStartsOn === 0 ? days[1] : days[0]);
   if (view === "day") return { title, subtitle: `Week ${isoWeek(date)} · ${formatWeekday(date)}, ${formatShort(date)}` };
+  if (compact) {
+    const first = visible[0];
+    const last = visible[visible.length - 1];
+    return { title: `${monthName(first)}, ${fromKey(first).getFullYear()}`, subtitle: `Week ${isoWeek(first)} · ${formatRange(first, last)}` };
+  }
   return { title, subtitle: `Week ${week} · ${formatRange(days[0], days[6])}` };
 }
 
-export function CalendarHeader() {
+export function CalendarHeader({ days }: { days: string[] }) {
   const view = useCalendarStore((s) => s.view);
   const setView = useCalendarStore((s) => s.setView);
   const setDate = useCalendarStore((s) => s.setDate);
   const step = useCalendarStore((s) => s.step);
   const today = useToday();
-  const { title, subtitle } = useRangeLabel();
+  const compact = useCalendarStore((s) => s.compact);
+  const { title, subtitle } = useRangeLabel(days);
   const active = VIEWS.find((v) => v.id === view)!;
-  const unit = view === "day" ? "day" : view === "week" ? "week" : "month";
+  const unit = view === "day" ? "day" : view === "week" ? (compact ? "3 days" : "week") : "month";
 
   const activeIndex = VIEWS.indexOf(active);
 
@@ -129,7 +137,14 @@ export function CalendarHeader() {
               view === v.id ? "text-fg" : "text-fg-2 hover-fine:text-fg",
             )}
           >
-            {v.label}
+            {v.id === "week" ? (
+              <>
+                <span className="md:hidden">3 days</span>
+                <span className="max-md:hidden">{v.label}</span>
+              </>
+            ) : (
+              v.label
+            )}
           </button>
         ))}
       </div>
