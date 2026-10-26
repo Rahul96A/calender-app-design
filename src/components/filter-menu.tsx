@@ -67,7 +67,7 @@ export function FilterMenu({ groups, activeCount, onReset, title = "Filters", tr
     return (
       <Drawer>
         <DrawerTrigger asChild>
-          <Button className={cn("relative h-8 gap-1.5 px-2.5", className)} aria-label={`${triggerLabel}${activeCount ? `, ${activeCount} active` : ""}`}>
+          <Button className={cn("relative h-10 gap-1.5 px-3", className)} aria-label={`${triggerLabel}${activeCount ? `, ${activeCount} active` : ""}`}>
             <SlidersHorizontalIcon className={cn(activeCount > 0 && "text-brand")} />
             {triggerLabel}
             {activeCount > 0 && (
