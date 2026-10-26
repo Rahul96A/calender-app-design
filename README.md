@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Workspace — Time off & calendar
 
-## Getting Started
+A people-ops workspace built from the "Dashboard – calendar" Figma design. The
+**Time off** page (`/time-off`, the default route) reproduces the design
+pixel-for-pixel; every other page in the sidebar is built in the same visual
+language. Everything runs in the browser — there is no backend; data persists
+to `localStorage`.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript**
+- **Tailwind CSS v4** with design tokens mapped from the Figma variables
+- **shadcn/ui** (Radix primitives) themed to the design
+- **Zustand** for state (`persist` middleware → `localStorage`)
+- **next-themes** for dark mode, **Sonner** for toasts, **cmdk** for the command palette
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. To return to the exact design state, use
+**Settings → Data → Reset demo data** (or clear site data).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Calendar** — week / day / month views; drag on empty space to create, drag
+  events to move (across days), drag the bottom edge to resize; overlapping
+  events lay out side by side; all-day lane with public holidays; live now-line;
+  origin-aware details popover.
+- **Time off** — request dialog that counts working days (skips weekends and
+  holidays) and shows the balance after the request; stats computed from your
+  requests and allowance; requests table with search, filters, sorting, details,
+  edit/cancel/delete, and a manager approve/decline preview.
+- **Shell** — workspace switcher, ⌘K search across pages/events/requests/
+  documents/invoices, notifications, help menu, dark mode, account menu.
+- **Keyboard** — `⌘K` search, `N` new event, `R` request time-off, `T` today,
+  `←/→` previous/next, `D/W/M` views, `?` shortcuts.
+- **Other pages** — Dashboard, Analytics, Personal details, Documents, Time
+  tracking, Benefits, Invoice, Withdrawal methods, Settings.
 
-## Learn More
+## Project layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/                 routes (one folder per sidebar page)
+  components/
+    ui/                shadcn/ui primitives, themed
+    shell/             title bar, sidebar, search, notifications, shortcuts
+    calendar/          header, time grid, all-day row, month view, popover
+    time-off/          stats panel, requests table, status badge
+    dialogs/           app-wide dialogs (request, event, details, holidays…)
+    pages/             page bodies for the secondary routes
+  stores/              Zustand stores (app data, calendar view, overlays)
+  hooks/               client-only "today"/"now"
+  lib/                 types, date helpers, leave rules, seed data
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The seed in `src/lib/seed.ts` is what the design shows: the week of Nov 8–14,
+2026 with Tue Nov 10 selected, and allowance figures of 7 available, 2 pending,
+3 upcoming.
