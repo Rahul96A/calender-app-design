@@ -2,12 +2,18 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
+import { deleteCalendarEvent } from "@/components/calendar/delete-event";
+import { redo, undo } from "@/stores/app-store";
 import { useToday } from "@/hooks/use-today";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay, useOverlayStore } from "@/stores/overlay-store";
 
 export const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ["⌘", "K"], label: "Search" },
+  { keys: ["⌘", "Z"], label: "Undo" },
+  { keys: ["⇧", "⌘", "Z"], label: "Redo" },
+  { keys: ["⌫"], label: "Delete selected event" },
   { keys: ["N"], label: "New event" },
   { keys: ["R"], label: "Request time-off" },
   { keys: ["T"], label: "Go to today" },
@@ -32,7 +38,39 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
+      if (isTyping(e.target)) return; // text fields keep their native undo/delete
+
+      // ⌘Z / Ctrl+Z undo · ⇧⌘Z / Ctrl+Shift+Z / Ctrl+Y redo
+      const mod = e.metaKey || e.ctrlKey;
+      const k = e.key.toLowerCase();
+      if (mod && !e.altKey && (k === "z" || (k === "y" && e.ctrlKey))) {
+        e.preventDefault();
+        const isRedo = k === "y" || e.shiftKey;
+        const label = isRedo ? redo() : undo();
+        if (label) {
+          toast(isRedo ? "Redone" : "Undone", {
+            description: label,
+            action: { label: isRedo ? "Undo" : "Redo", onClick: () => void (isRedo ? undo() : redo()) },
+          });
+        } else {
+          toast(isRedo ? "Nothing to redo" : "Nothing to undo");
+        }
+        return;
+      }
+
+      // Delete / Backspace removes the selected event (open in the popover, or focused).
+      if ((e.key === "Delete" || e.key === "Backspace") && !mod && !e.altKey) {
+        const popover = useCalendarStore.getState().popover;
+        const focused = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-event-id]");
+        const id = popover?.kind === "event" ? popover.id : focused?.dataset.eventId;
+        if (id && useOverlayStore.getState().overlay.kind === "none") {
+          e.preventDefault();
+          deleteCalendarEvent(id);
+        }
+        return;
+      }
+
+      if (mod || e.altKey) return;
       if (useOverlayStore.getState().overlay.kind !== "none") return;
       if (document.querySelector("[role=dialog],[role=menu],[data-radix-popper-content-wrapper]")) return;
 

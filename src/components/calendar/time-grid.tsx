@@ -137,6 +137,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
   const focusEventId = useCalendarStore((s) => s.focusEventId);
   const clearFocus = useCalendarStore((s) => s.clearFocus);
   const openPopover = useCalendarStore((s) => s.openPopover);
+  const selectedEventId = useCalendarStore((s) => (s.popover?.kind === "event" ? s.popover.id : null));
   const today = useToday();
   const now = useNow();
 
@@ -459,6 +460,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
                       timeFormat={timeFormat}
                       dragging={Boolean(drag && drag.type !== "create" && drag.eventId === event.id && drag.moved && !drag.locked)}
                       highlighted={highlightId === event.id}
+                      selected={selectedEventId === event.id}
                       onOpen={(el) => openPopover("event", event.id, el)}
                     />
                   ))}
@@ -504,6 +506,7 @@ function EventBlock({
   timeFormat,
   dragging,
   highlighted,
+  selected,
   onOpen,
 }: {
   event: CalEvent;
@@ -512,6 +515,7 @@ function EventBlock({
   timeFormat: "24h" | "12h";
   dragging: boolean;
   highlighted: boolean;
+  selected: boolean;
   onOpen: (el: HTMLElement) => void;
 }) {
   const height = minutesToPx(event.end - event.start) - 2;
@@ -530,6 +534,7 @@ function EventBlock({
           e.preventDefault();
           onOpen(e.currentTarget);
         }
+        // Delete / Backspace are handled globally (see keyboard-shortcuts).
       }}
       data-locked={locked || undefined}
       className={cn(
@@ -538,6 +543,7 @@ function EventBlock({
         "hover-fine:brightness-[0.97] dark:hover-fine:brightness-110",
         locked ? "cursor-pointer" : "cursor-grab",
         dragging && "z-30 opacity-95 shadow-[0_8px_24px_-6px_rgba(15,15,15,0.28)]",
+        selected && "ring-2 ring-brand/70 ring-offset-1 ring-offset-surface",
         highlighted && "animate-[event-pulse_1.4s_var(--ease-out)]",
       )}
       style={{

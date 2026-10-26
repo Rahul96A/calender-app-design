@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-media-query";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
+import { deleteCalendarEvent } from "./delete-event";
 
 /** Details card for an event or holiday, anchored to whatever was clicked. */
 export function EventPopover() {
@@ -21,7 +22,6 @@ export function EventPopover() {
   const holiday = useAppStore((s) => (target?.kind === "holiday" ? s.holidays.find((h) => h.id === target.id) : undefined));
   const request = useAppStore((s) => (event?.requestId ? s.requests.find((r) => r.id === event.requestId) : undefined));
   const timeFormat = useAppStore((s) => s.settings.timeFormat);
-  const deleteEvent = useAppStore((s) => s.deleteEvent);
   const duplicateEvent = useAppStore((s) => s.duplicateEvent);
 
   const isMobile = useIsMobile();
@@ -123,15 +123,14 @@ export function EventPopover() {
                       variant="ghost"
                       size="icon-sm"
                       aria-label="Delete"
-                      onClick={() => {
-                        deleteEvent(event.id);
-                        close();
-                      }}
+                      onClick={() => deleteCalendarEvent(event.id)}
                     >
                       <Trash2Icon className="text-danger" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Delete</TooltipContent>
+                  <TooltipContent>
+                    Delete <kbd className="ml-1 font-sans opacity-70">⌫</kbd>
+                  </TooltipContent>
                 </Tooltip>
               )}
             </div>
