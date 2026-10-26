@@ -59,17 +59,17 @@ export function BenefitsPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-thin bg-app">
-      <header className="sticky top-0 z-10 flex h-[68px] shrink-0 items-center gap-3 border-b border-hairline bg-surface px-4">
+      <header className="sticky top-0 z-10 flex min-h-[68px] shrink-0 items-center gap-3 border-b border-hairline bg-surface px-4 py-3 md:h-[68px] md:py-0">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <h2 className="t-16 text-fg">Your benefits</h2>
-          <p className="t-14 text-fg-2">
+          <p className="t-14 leading-[1.3] text-fg-2 md:truncate md:leading-none">
             {summary.enrolled} of {benefits.length} enrolled · budgets reset on renewal
           </p>
         </div>
       </header>
 
       <div className="flex flex-col gap-4 p-4">
-        <dl className="grid grid-cols-4 overflow-hidden rounded-xl border border-hairline bg-surface">
+        <dl className="grid grid-cols-2 overflow-hidden rounded-xl border border-hairline bg-surface md:grid-cols-4">
           <SummaryStat label="Total budget" value={formatMoney(summary.budget)} />
           <SummaryStat label="Used" value={formatMoney(summary.used)} />
           <SummaryStat
@@ -88,7 +88,12 @@ export function BenefitsPage() {
           <SummaryStat label="Enrolled" value={`${summary.enrolled}`} suffix={`of ${benefits.length}`} />
         </dl>
 
-        <div role="toolbar" aria-label="Filter by category" className="flex flex-wrap items-center gap-1">
+        {/* Phones: one horizontally scrolling chip row that bleeds to the screen edges */}
+        <div
+          role="toolbar"
+          aria-label="Filter by category"
+          className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden"
+        >
           {(["All", ...CATEGORIES] as Filter[]).map((c) => {
             const active = filter === c;
             const n = counts.get(c) ?? 0;
@@ -99,10 +104,10 @@ export function BenefitsPage() {
                 aria-pressed={active}
                 onClick={() => setFilter(c)}
                 className={cn(
-                  "press t-14 flex h-7 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-3 focus-visible:ring-brand/15",
+                  "press t-14 flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 whitespace-nowrap outline-none focus-visible:ring-3 focus-visible:ring-brand/15 md:h-7 md:px-2.5",
                   active
                     ? "border-control bg-surface text-fg shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-                    : "border-transparent text-fg-2 hover-fine:bg-hover hover-fine:text-fg",
+                    : "border-transparent text-fg-2 hover-fine:bg-hover hover-fine:text-fg max-md:border-hairline",
                 )}
               >
                 {c !== "All" && <CategoryTile category={c} size="sm" />}
@@ -118,7 +123,7 @@ export function BenefitsPage() {
             <p className="t-14 text-fg-2">No {filter.toLowerCase()} benefits yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(340px,100%),1fr))] gap-4">
             {visible.map((b) => (
               <BenefitCard
                 key={b.id}
@@ -182,7 +187,7 @@ function SummaryStat({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2.5 border-r border-hairline px-4 py-3.5 last:border-r-0">
+    <div className="flex min-w-0 flex-col gap-2.5 border-hairline px-4 py-3.5 max-md:odd:border-r max-md:nth-[-n+2]:border-b md:border-r md:last:border-r-0">
       <dt className="t-12 text-fg-2">{label}</dt>
       <dd className="flex items-baseline gap-1.5">
         <span className="text-[20px] leading-none font-medium tracking-[-0.4px] text-fg tabular-nums">{value}</span>
@@ -256,29 +261,36 @@ function BenefitCard({
               />
             </>
           ) : (
-            <p className="t-14 text-fg-2">No spending budget — covered in full by the company.</p>
+            <p className="t-14 leading-[1.3] text-fg-2">No spending budget — covered in full by the company.</p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-hairline px-4 py-3">
-        <span className="t-12 flex min-w-0 flex-1 items-center gap-1.5 text-fg-2">
+      {/* Phones: renewal date on its own line, full-width actions underneath */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-4 py-3 max-sm:gap-y-3">
+        <span className="t-12 flex min-w-0 flex-1 items-center gap-1.5 text-fg-2 max-sm:basis-full">
           <CalendarSyncIcon className="size-3.5 shrink-0 text-icon" />
           <span className="truncate">Renews {formatShort(b.renewsOn)}, {b.renewsOn.slice(0, 4)}</span>
         </span>
         {b.enrolled ? (
           <>
             {b.budget > 0 && (
-              <Button size="sm" className="px-2" disabled={remaining <= 0} onClick={onClaim} aria-label={`Submit a claim for ${b.name}`}>
+              <Button
+                size="sm"
+                className="px-2 max-sm:h-10 max-sm:flex-1"
+                disabled={remaining <= 0}
+                onClick={onClaim}
+                aria-label={`Submit a claim for ${b.name}`}
+              >
                 <ReceiptIcon className="text-icon" /> Claim
               </Button>
             )}
-            <Button size="sm" variant="ghost" className="px-2" onClick={onUnenroll}>
+            <Button size="sm" variant="ghost" className="px-2 max-sm:h-10 max-sm:flex-1" onClick={onUnenroll}>
               Unenroll
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="brand" className="px-2" onClick={onEnroll}>
+          <Button size="sm" variant="brand" className="px-2 max-sm:h-10 max-sm:flex-1" onClick={onEnroll}>
             <PlusIcon /> Enroll
           </Button>
         )}

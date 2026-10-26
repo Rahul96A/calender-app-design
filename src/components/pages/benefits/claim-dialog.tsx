@@ -24,7 +24,7 @@ type Props = { benefit?: Benefit; session: number; open: boolean; onClose: () =>
 export function ClaimDialog({ benefit, session, open, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="gap-5 p-5 sm:max-w-[440px]">
+      <DialogContent className="gap-5 p-5 max-sm:pb-0 sm:max-w-[440px]">
         {benefit && <ClaimForm key={session} benefit={benefit} onDone={onClose} />}
       </DialogContent>
     </Dialog>
@@ -145,7 +145,7 @@ function ClaimForm({ benefit, onDone }: { benefit: Benefit; onDone: () => void }
         </Field>
       </div>
 
-      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3">
+      <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3 max-sm:mb-0 max-sm:pb-[max(12px,env(safe-area-inset-bottom))] max-sm:[&_button]:h-10">
         <Button type="button" onClick={onDone}>
           Cancel
         </Button>
