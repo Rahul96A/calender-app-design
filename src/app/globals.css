@@ -323,3 +323,12 @@
     --tw-exit-scale: 1;
   }
 }
+
+@keyframes event-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(137, 101, 222, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(137, 101, 222, 0);
+  }
+}
