@@ -35,7 +35,7 @@ export function WeekChart({
           <span className="t-12 absolute -top-2 right-0 bg-surface pl-1.5 text-section">8h</span>
         </div>
         <div aria-hidden className="absolute inset-x-0 bottom-0 border-t border-hairline" />
-        <div className="relative grid h-full grid-cols-7 gap-2 pr-6">
+        <div className="relative grid h-full grid-cols-7 gap-1 pr-6 sm:gap-2">
           {days.map((d) => {
             const total = d.billable + d.nonBillable;
             const bH = px(d.billable);
@@ -51,11 +51,13 @@ export function WeekChart({
                     className="group flex h-full flex-col items-center justify-end rounded-md outline-none focus-visible:ring-3 focus-visible:ring-brand/15 disabled:cursor-default"
                   >
                     {total > 0 && (
-                      <span className="t-12 mb-1.5 text-fg-2 tabular-nums transition-colors duration-150 group-hover:text-fg">
-                        {formatHours(total)}
+                      <span className="t-12 mb-1.5 whitespace-nowrap text-fg-2 tabular-nums transition-colors duration-150 hover-fine:group-hover:text-fg">
+                        {/* Phones: "7.5h" keeps seven labels inside their columns */}
+                        <span className="sm:hidden">{compactHours(total)}</span>
+                        <span className="max-sm:hidden">{formatHours(total)}</span>
                       </span>
                     )}
-                    <span className="flex w-7 flex-col justify-end gap-[2px]">
+                    <span className="flex w-full max-w-7 flex-col justify-end gap-[2px]">
                       {nH > 0 && (
                         <span
                           className="block w-full rounded-t-[4px]"
@@ -87,7 +89,7 @@ export function WeekChart({
           })}
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-2 pr-6">
+      <div className="grid grid-cols-7 gap-1 pr-6 sm:gap-2">
         {days.map((d) => {
           const isToday = d.date === today;
           return (
@@ -109,6 +111,11 @@ export function WeekChart({
       </div>
     </div>
   );
+}
+
+/** 450 → "7.5h", 480 → "8h", 25 → "25m" */
+function compactHours(minutes: number): string {
+  return minutes < 60 ? `${minutes}m` : `${Math.round((minutes / 60) * 10) / 10}h`;
 }
 
 export function ChartLegend() {
