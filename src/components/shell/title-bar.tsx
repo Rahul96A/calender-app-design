@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { pageTitle } from "@/lib/nav";
 import { openOverlay } from "@/stores/overlay-store";
 import { GlobalSearchTrigger } from "./global-search";
+import { MobileNav } from "./mobile-nav";
 import { NotificationsPopover } from "./notifications-popover";
 import { Brand } from "./workspace-switcher";
 
@@ -58,19 +59,27 @@ function HelpMenu() {
 export function TitleBar() {
   const pathname = usePathname();
   return (
-    <header className="flex h-[53px] w-full shrink-0 items-center overflow-hidden border-b border-hairline bg-app pr-4">
-      <Brand />
-      <div className="flex h-full min-w-0 flex-1 items-center overflow-hidden pl-4">
+    <header className="flex h-[53px] w-full shrink-0 items-center overflow-hidden border-b border-hairline bg-app pr-3 pt-[env(safe-area-inset-top)] sm:pr-4">
+      <Brand className="hidden lg:flex" />
+      <MobileNav />
+      <div className="flex h-full min-w-0 flex-1 items-center overflow-hidden pl-2 lg:pl-4">
         <h1 className="t-16 min-w-0 flex-1 truncate font-medium text-fg">{pageTitle(pathname)}</h1>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <GlobalSearchTrigger />
-        <HelpMenu />
+        <div className="hidden md:contents">
+          <HelpMenu />
+        </div>
         <NotificationsPopover />
-        <div className="h-4 w-px bg-hairline" aria-hidden />
-        <Button variant="brand" className="gap-1.5" onClick={() => openOverlay({ kind: "request" })}>
+        <div className="hidden h-4 w-px bg-hairline sm:block" aria-hidden />
+        <Button
+          variant="brand"
+          className="gap-1.5 max-sm:w-[30px] max-sm:px-0"
+          aria-label="Request time-off"
+          onClick={() => openOverlay({ kind: "request" })}
+        >
           <Icon name="request-time-off" className="text-white" />
-          Request time-off
+          <span className="max-sm:sr-only">Request time-off</span>
         </Button>
       </div>
     </header>

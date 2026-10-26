@@ -28,7 +28,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-lg px-2 outline-none transition-[background-color,color] duration-150",
+        "flex h-8 w-full items-center gap-2 rounded-lg px-2 outline-none transition-[background-color,color] duration-150 max-lg:h-10",
         "focus-visible:ring-2 focus-visible:ring-brand/40",
         active ? "bg-selected text-fg" : "text-fg-2 hover-fine:bg-hover hover-fine:text-fg",
       )}
@@ -53,7 +53,7 @@ function ThemeRow() {
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const dark = mounted && resolvedTheme === "dark";
   return (
-    <label className="flex h-8 w-full cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-fg-2 transition-colors duration-150 hover-fine:bg-hover">
+    <label className="flex h-8 w-full max-lg:h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-fg-2 transition-colors duration-150 hover-fine:bg-hover">
       <Icon name="moon" />
       <span className="t-14 salt min-w-0 flex-1">Dark mode</span>
       <Switch
@@ -111,13 +111,14 @@ function AccountMenu() {
   );
 }
 
-export function Sidebar() {
+/** Navigation + utilities, shared by the desktop sidebar and the mobile nav sheet. */
+export function SidebarBody({ className }: { className?: string }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col justify-between overflow-hidden border-r border-hairline bg-app p-3">
-      <nav aria-label="Primary" className="flex w-full flex-col gap-4 overflow-hidden">
+    <div className={cn("flex min-h-0 flex-1 flex-col justify-between gap-6 overflow-y-auto p-3 [scrollbar-width:none]", className)}>
+      <nav aria-label="Primary" className="flex w-full flex-col gap-4">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="flex w-full flex-col gap-0.5">
             <SectionLabel>{group.label}</SectionLabel>
@@ -127,13 +128,22 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-      <div className="flex w-full flex-col gap-3 overflow-hidden">
+      <div className="flex w-full flex-col gap-3">
         <div className="flex w-full flex-col gap-0.5">
           <ThemeRow />
           <NavLink item={SETTINGS_ITEM} active={isActive(SETTINGS_ITEM.href)} />
         </div>
         <AccountMenu />
       </div>
+    </div>
+  );
+}
+
+/** Fixed 240px sidebar from the design; hidden below `lg`, where the nav sheet takes over. */
+export function Sidebar() {
+  return (
+    <aside className="hidden h-full w-60 shrink-0 flex-col overflow-hidden border-r border-hairline bg-app lg:flex">
+      <SidebarBody />
     </aside>
   );
 }

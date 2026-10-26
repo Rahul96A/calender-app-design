@@ -6,7 +6,7 @@ import { TitleBar } from "./title-bar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-full min-w-[1100px] flex-col bg-app">
+    <div className="flex h-full flex-col bg-app">
       <TitleBar />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar />

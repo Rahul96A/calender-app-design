@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { selectWorkspaceName, useAppStore } from "@/stores/app-store";
 
-export function Brand() {
+export function Brand({ className }: { className?: string }) {
   const name = useAppStore(selectWorkspaceName);
   const workspaces = useAppStore((s) => s.workspaces);
   const workspaceId = useAppStore((s) => s.workspaceId);
@@ -34,7 +35,7 @@ export function Brand() {
   const [draft, setDraft] = useState("");
 
   return (
-    <div className="flex h-full w-60 shrink-0 items-center gap-2 overflow-hidden border-r border-hairline px-3">
+    <div className={cn("flex h-full w-60 shrink-0 items-center gap-2 overflow-hidden border-r border-hairline px-3", className)}>
       <span className="salt truncate text-[16px] leading-none font-semibold tracking-[-0.48px] text-fg">{name}</span>
       <span className="h-px min-w-px flex-1" />
       <DropdownMenu>
