@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { WEEKDAYS_SHORT, dayOfWeek, formatTime, fromKey, isWeekend, monthGrid } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-media-query";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
@@ -20,6 +21,12 @@ export function MonthView() {
   const holidays = useAppStore((s) => s.holidays);
   const { weekStartsOn, showWeekends, timeFormat } = useAppStore((s) => s.settings);
   const today = useToday();
+  const isMobile = useIsMobile();
+  // On phones a tap on a day opens it (cells are too small to act on chips).
+  const openDay = (d: string) => {
+    setDate(d);
+    setView("day");
+  };
 
   const grid = useMemo(() => {
     const all = monthGrid(date, weekStartsOn);
@@ -47,8 +54,11 @@ export function MonthView() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="grid h-10 shrink-0 border-b border-hairline" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {headers.map((h, i) => (
-          <div key={h} className={cn("t-14 flex items-center px-3 text-dayname", i > 0 && "border-l border-hairline")}>
-            {h}
+          <div key={h} className={cn("t-14 flex items-center px-3 text-dayname max-md:justify-center max-md:px-0 max-md:text-[11px]", i > 0 && "border-l border-hairline")}>
+            <span className="max-md:hidden">{h}</span>
+            <span className="md:hidden" aria-hidden>
+              {h[0]}
+            </span>
           </div>
         ))}
       </div>
@@ -66,22 +76,27 @@ export function MonthView() {
             <div
               key={d}
               onClick={(e) => {
-                if (e.target === e.currentTarget) setDate(d);
+                if (isMobile) openDay(d);
+                else if (e.target === e.currentTarget) setDate(d);
               }}
               onDoubleClick={(e) => {
                 if (e.target === e.currentTarget) openOverlay({ kind: "event", date: d, start: 540, end: 600 });
               }}
               className={cn(
-                "flex min-h-0 flex-col gap-1 overflow-hidden border-b border-hairline p-1.5",
+                "flex min-h-0 flex-col gap-1 overflow-hidden border-b border-hairline p-1.5 max-md:items-center max-md:gap-1 max-md:p-1",
                 i % cols > 0 && "border-l",
                 !inMonth && "bg-app/60",
               )}
             >
               <button
                 type="button"
-                onClick={() => (selected ? setView("day") : setDate(d))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isMobile || selected) openDay(d);
+                  else setDate(d);
+                }}
                 className={cn(
-                  "t-14 flex h-6 min-w-6 shrink-0 items-center justify-center self-start rounded-lg px-1 transition-[background-color,color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-brand/50",
+                  "t-14 flex h-6 min-w-6 shrink-0 items-center justify-center self-start rounded-lg px-1 max-md:self-center transition-[background-color,color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-brand/50",
                   selected
                     ? "accent-badge font-semibold"
                     : isToday
@@ -94,13 +109,21 @@ export function MonthView() {
               >
                 {fromKey(d).getDate()}
               </button>
+              {/* Phones: up to three colour dots per day */}
+              {items.length > 0 && (
+                <span className="flex gap-0.5 md:hidden" aria-label={`${items.length} ${items.length === 1 ? "item" : "items"}`}>
+                  {items.slice(0, 3).map((it) => (
+                    <span key={it.id} className="size-1.5 rounded-full" style={{ background: `var(--event-${it.color}-fg)` }} />
+                  ))}
+                </span>
+              )}
               {items.slice(0, MAX_CHIPS).map((it) => (
                 <button
                   key={it.id}
                   type="button"
                   onClick={(e) => openPopover(it.kind, it.id, e.currentTarget)}
                   className={cn(
-                    "t-12 salt flex h-[22px] w-full shrink-0 items-center truncate rounded-md px-1.5 text-left outline-none",
+                    "t-12 salt flex h-[22px] w-full shrink-0 items-center truncate rounded-md px-1.5 text-left outline-none max-md:hidden",
                     "hover-fine:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-brand/50 dark:hover-fine:brightness-110",
                     !inMonth && "opacity-60",
                   )}
@@ -116,7 +139,7 @@ export function MonthView() {
                     setDate(d);
                     setView("day");
                   }}
-                  className="t-12 self-start rounded-md px-1.5 py-1 text-fg-2 hover-fine:bg-hover hover-fine:text-fg"
+                  className="t-12 self-start rounded-md px-1.5 py-1 text-fg-2 hover-fine:bg-hover hover-fine:text-fg max-md:hidden"
                 >
                   +{hidden} more
                 </button>

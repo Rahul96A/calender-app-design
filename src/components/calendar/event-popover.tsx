@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { StatusBadge } from "@/components/time-off/status-badge";
 import { formatLong, formatTimeRange, formatWeekday } from "@/lib/dates";
 import { formatDuration } from "@/lib/dates";
+import { useIsMobile } from "@/hooks/use-media-query";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -23,6 +24,7 @@ export function EventPopover() {
   const deleteEvent = useAppStore((s) => s.deleteEvent);
   const duplicateEvent = useAppStore((s) => s.duplicateEvent);
 
+  const isMobile = useIsMobile();
   const rect = target?.rect;
   const virtualRef = useMemo(
     () => ({
@@ -40,11 +42,11 @@ export function EventPopover() {
     <Popover open={open} onOpenChange={(v) => !v && close()}>
       <PopoverAnchor virtualRef={virtualRef} />
       <PopoverContent
-        side="right"
-        align="start"
+        side={isMobile ? "bottom" : "right"}
+        align={isMobile ? "center" : "start"}
         sideOffset={8}
         collisionPadding={12}
-        className="w-[300px] gap-0 p-0"
+        className="w-[300px] max-w-[calc(100vw-24px)] gap-0 p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {event && (

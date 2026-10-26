@@ -54,26 +54,30 @@ export function CalendarHeader() {
   const active = VIEWS.find((v) => v.id === view)!;
   const unit = view === "day" ? "day" : view === "week" ? "week" : "month";
 
-  return (
-    <div className="flex h-[68px] w-full shrink-0 items-center gap-2 overflow-hidden border-b border-hairline px-4">
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 overflow-hidden whitespace-nowrap">
-        <h2 className="t-16 text-fg">{title}</h2>
-        <p className="t-14 salt text-fg-2">{subtitle}</p>
-      </div>
+  const activeIndex = VIEWS.indexOf(active);
 
-      <div className="flex items-center gap-2">
-        <Button size="sm" onClick={() => setDate(today)} aria-keyshortcuts="T">
+  return (
+    // Phones: two rows (range + navigation, then a full-width view switcher).
+    // md+: the single 68px row from the design.
+    <div className="flex w-full shrink-0 flex-col gap-3 overflow-hidden border-b border-hairline px-4 py-3 md:h-[68px] md:flex-row md:items-center md:gap-2 md:py-0">
+      <div className="flex min-w-0 items-center gap-2 md:contents">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 overflow-hidden whitespace-nowrap">
+          <h2 className="t-16 max-w-full truncate text-fg">{title}</h2>
+          <p className="t-14 salt max-w-full truncate text-fg-2">{subtitle}</p>
+        </div>
+
+        <Button size="sm" className="shrink-0 max-md:h-8" onClick={() => setDate(today)} aria-keyshortcuts="T">
           Today
         </Button>
 
-        <div className="flex h-[30px] items-center overflow-hidden rounded-lg border border-control bg-surface">
+        <div className="flex h-[30px] shrink-0 items-center overflow-hidden rounded-lg border border-control bg-surface max-md:h-8">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={() => step(-1)}
                 aria-label={`Previous ${unit}`}
-                className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover"
+                className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover max-md:w-9"
               >
                 <Icon name="arrow-left" />
               </button>
@@ -87,7 +91,7 @@ export function CalendarHeader() {
                 type="button"
                 onClick={() => step(1)}
                 aria-label={`Next ${unit}`}
-                className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover"
+                className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover max-md:w-9"
               >
                 <Icon name="arrow-right" className="-scale-x-100" />
               </button>
@@ -95,31 +99,39 @@ export function CalendarHeader() {
             <TooltipContent>Next {unit}</TooltipContent>
           </Tooltip>
         </div>
+      </div>
 
-        <div role="tablist" aria-label="Calendar view" className="relative flex h-[30px] w-[163px] items-center gap-0.5 overflow-hidden rounded-lg bg-app p-px">
-          <span
-            aria-hidden
-            className="absolute top-px left-0 h-7 rounded-lg border border-segment bg-surface transition-[transform,width] duration-200 ease-(--ease-out)"
-            style={{ width: active.width, transform: `translateX(${active.left}px)` }}
-          />
-          {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              role="tab"
-              aria-selected={view === v.id}
-              aria-keyshortcuts={v.key}
-              onClick={() => setView(v.id)}
-              style={{ width: v.width }}
-              className={cn(
-                "t-14 salt relative z-10 flex h-7 shrink-0 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40",
-                view === v.id ? "text-fg" : "text-fg-2 hover-fine:text-fg",
-              )}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
+      <div
+        role="tablist"
+        aria-label="Calendar view"
+        className="relative flex h-[34px] w-full items-center gap-0.5 overflow-hidden rounded-lg bg-app p-px md:h-[30px] md:w-[163px]"
+        style={{ "--w": `${active.width}px`, "--x": `${active.left}px`, "--i": activeIndex } as React.CSSProperties}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "absolute top-px left-0 h-8 rounded-lg border border-segment bg-surface transition-[translate,width] duration-200 ease-(--ease-out) md:h-7",
+            // Equal thirds on phones; the design's exact segment geometry from md up.
+            "w-[calc((100%-6px)/3)] translate-x-[calc(var(--i)*(100%+2px)+1px)] md:w-(--w) md:translate-x-(--x)",
+          )}
+        />
+        {VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={view === v.id}
+            aria-keyshortcuts={v.key}
+            onClick={() => setView(v.id)}
+            style={{ "--seg": `${v.width}px` } as React.CSSProperties}
+            className={cn(
+              "t-14 salt relative z-10 flex h-8 flex-1 items-center justify-center rounded-md outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand/40 md:h-7 md:w-(--seg) md:flex-none md:shrink-0",
+              view === v.id ? "text-fg" : "text-fg-2 hover-fine:text-fg",
+            )}
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
     </div>
   );
