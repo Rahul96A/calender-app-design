@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { useNow, useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { openOverlay } from "@/stores/overlay-store";
-import { Card, CardHeader, EmptyState, PageHeader, PageRoot, StatIcon, type StatGlyph } from "@/components/pages/shared/page-chrome";
+import { Card, CardHeader, EmptyState, PageHeader, PageRoot, StatGrid, StatTile } from "@/components/pages/shared/page-chrome";
 
 function greetingFor(now: number) {
   if (!now) return "Welcome back";
@@ -73,7 +73,8 @@ export function DashboardPage() {
             <Button onClick={() => openOverlay({ kind: "event", date: today })}>
               <PlusIcon className="text-icon" /> New event
             </Button>
-            <Button asChild>
+            {/* Phones reach the calendar from the nav and the Upcoming card. */}
+            <Button asChild className="max-md:hidden">
               <Link href="/time-off">
                 <Icon name="nav-calendar" /> Open calendar
               </Link>
@@ -81,14 +82,14 @@ export function DashboardPage() {
           </>
         }
       />
-      <div className="grid gap-4 p-4">
+      <div className="grid gap-3 p-4 md:gap-4">
         <StatRow />
-        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="grid min-w-0 gap-4">
+        <div className="grid grid-cols-1 items-start gap-3 md:gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid min-w-0 gap-3 md:gap-4">
             <UpcomingCard />
             <WeekHoursCard />
           </div>
-          <div className="grid min-w-0 gap-4">
+          <div className="grid min-w-0 gap-3 md:gap-4">
             <BalanceCard />
             <QuickActionsCard />
             <NotificationsCard />
@@ -100,45 +101,6 @@ export function DashboardPage() {
 }
 
 /* ------------------------------------------------------------------ stats */
-
-function StatTile({
-  icon,
-  label,
-  value,
-  hint,
-  href,
-}: {
-  icon: StatGlyph;
-  label: string;
-  value: React.ReactNode;
-  hint: React.ReactNode;
-  href?: string;
-}) {
-  const body = (
-    <>
-      <span className="flex items-center gap-2">
-        <StatIcon name={icon} size={16} />
-        <span className="t-14 min-w-0 flex-1 truncate text-fg-2">{label}</span>
-        {href ? (
-          <ArrowRightIcon className="size-3.5 text-icon opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
-        ) : null}
-      </span>
-      <span className="text-[28px] leading-none font-medium tracking-[-0.84px] text-fg">{value}</span>
-      <span className="t-12 truncate text-fg-2">{hint}</span>
-    </>
-  );
-  const cls = "group flex min-w-0 flex-col gap-3 rounded-xl border border-hairline bg-surface p-4";
-  return href ? (
-    <Link
-      href={href}
-      className={cn(cls, "outline-none transition-colors duration-150 hover-fine:bg-hover focus-visible:ring-2 focus-visible:ring-brand/40")}
-    >
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
-  );
-}
 
 function StatRow() {
   const today = useToday();
@@ -172,7 +134,7 @@ function StatRow() {
   const inDays = nextLeave ? diffDays(today, nextLeave.from) : 0;
 
   return (
-    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+    <StatGrid>
       <StatTile
         icon="available"
         label="Available days"
@@ -209,7 +171,7 @@ function StatRow() {
         }
         href="/time-off"
       />
-    </div>
+    </StatGrid>
   );
 }
 
@@ -242,7 +204,7 @@ function UpcomingCard() {
         title="Upcoming"
         description="Your next events and time off"
         actions={
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="max-md:h-9">
             <Link href="/time-off">
               View calendar <ArrowRightIcon />
             </Link>
@@ -286,7 +248,7 @@ function UpcomingCard() {
                     </span>
                   </span>
                   {e.note ? (
-                    <span className="t-12 max-w-[160px] shrink-0 truncate rounded-md bg-app px-1.5 py-1 text-fg-2">{e.note}</span>
+                    <span className="t-12 max-w-24 shrink-0 truncate rounded-md bg-app px-1.5 py-1 text-fg-2 sm:max-w-[160px]">{e.note}</span>
                   ) : null}
                 </button>
               </li>
@@ -325,7 +287,7 @@ function WeekHoursCard() {
         title="Hours this week"
         description={total ? `${formatDuration(total)} tracked` : "No time tracked yet this week"}
         actions={
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="max-md:h-9">
             <Link href="/time-tracking">
               <TimerIcon /> Time tracking
             </Link>
@@ -353,8 +315,14 @@ function WeekHoursCard() {
                     <button
                       type="button"
                       aria-label={`${formatWeekday(d.date)}: ${d.minutes ? formatDuration(d.minutes) : "no time"} tracked`}
-                      className="group flex h-full items-end justify-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                      className="group flex h-full flex-col items-center justify-end gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                     >
+                      {/* Touch has no hover tooltip: label the bars directly on phones. */}
+                      {d.minutes ? (
+                        <span className={cn("t-12-tight tabular-nums md:hidden", isToday ? "text-brand" : "text-fg-2")}>
+                          {Math.round(d.minutes / 6) / 10}h
+                        </span>
+                      ) : null}
                       <span
                         className={cn(
                           "w-full max-w-6 rounded-t-[4px] transition-opacity duration-150 group-hover:opacity-80",
@@ -417,7 +385,7 @@ function BalanceCard() {
         title="Leave balance"
         description={`${stats.contract} contract + ${stats.carryover} carryover days`}
         actions={
-          <Button variant="ghost" size="sm" onClick={() => openOverlay({ kind: "policy" })}>
+          <Button variant="ghost" size="sm" className="max-md:h-9" onClick={() => openOverlay({ kind: "policy" })}>
             Policy
           </Button>
         }
@@ -446,7 +414,7 @@ function BalanceCard() {
             </li>
           ))}
         </ul>
-        <Button variant="brand" className="w-full" onClick={() => openOverlay({ kind: "request" })}>
+        <Button variant="brand" className="w-full max-md:h-10" onClick={() => openOverlay({ kind: "request" })}>
           <Icon name="request-time-off" className="text-white" /> Request time-off
         </Button>
       </div>
@@ -467,7 +435,7 @@ function QuickActionsCard() {
     { label: "Settings", icon: <SettingsIcon />, href: "/settings" },
   ];
   const cls =
-    "press flex h-9 items-center gap-2 rounded-lg border border-control bg-surface px-2.5 text-left outline-none transition-colors duration-150 hover-fine:bg-hover focus-visible:ring-2 focus-visible:ring-brand/40 [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-icon";
+    "press flex h-10 items-center gap-2 md:h-9 rounded-lg border border-control bg-surface px-2.5 text-left outline-none transition-colors duration-150 hover-fine:bg-hover focus-visible:ring-2 focus-visible:ring-brand/40 [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-icon";
   return (
     <Card>
       <CardHeader title="Quick actions" />
@@ -508,7 +476,7 @@ function NotificationsCard() {
         description={unread ? `${unread} unread` : "You’re all caught up"}
         actions={
           unread ? (
-            <Button variant="ghost" size="sm" onClick={markAll} className="t-12">
+            <Button variant="ghost" size="sm" onClick={markAll} className="t-12 max-md:h-9">
               Mark all read
             </Button>
           ) : null
