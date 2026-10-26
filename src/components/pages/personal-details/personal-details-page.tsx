@@ -14,6 +14,9 @@ import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardHeader, PageHeader, PageRoot } from "@/components/pages/shared/page-chrome";
 
+/** Phones: 40px fields with 16px text, so iOS doesn't zoom in on focus. */
+const TOUCH_FIELD = "max-md:h-10 max-md:text-[16px]";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BIO_MAX = 280;
 
@@ -120,12 +123,13 @@ export function PersonalDetailsPage() {
 
   // Errors show once a field has been edited, or for every field after a failed save.
   const err = (k: keyof Profile) => ((showErrors || k in edits) && errors[k]) || null;
-  const input = (k: keyof Profile, props: React.ComponentProps<typeof Input> = {}) => (
+  const input = (k: keyof Profile, { className, ...props }: React.ComponentProps<typeof Input> = {}) => (
     <Input
       id={`pd-${k}`}
       value={draft[k]}
       onChange={(e) => set(k, e.target.value)}
       aria-invalid={err(k) ? true : undefined}
+      className={cn(TOUCH_FIELD, className)}
       {...props}
     />
   );
@@ -138,24 +142,30 @@ export function PersonalDetailsPage() {
       <PageHeader
         title="Your profile"
         description={
-          dirty
-            ? `${changed.length} unsaved ${changed.length === 1 ? "change" : "changes"} · ⌘S to save`
-            : "Shared with your manager and People Ops"
+          dirty ? (
+            <>
+              {changed.length} unsaved {changed.length === 1 ? "change" : "changes"}
+              <span className="max-md:hidden"> · ⌘S to save</span>
+            </>
+          ) : (
+            "Shared with your manager and People Ops"
+          )
         }
         actions={
-          <>
+          // Phones get a sticky save bar at the bottom instead (see below).
+          <div className="hidden items-center gap-2 md:flex">
             <Button onClick={reset} disabled={!dirty}>
               <RotateCcwIcon className="text-icon" /> Reset
             </Button>
             <Button id="profile-save" type="submit" form="profile-form" variant="brand" disabled={!dirty}>
               Save changes
             </Button>
-          </>
+          </div>
         }
       />
       <form
         id="profile-form"
-        className="mx-auto grid w-full max-w-[1040px] grid-cols-1 items-start gap-4 p-4 lg:grid-cols-[280px_minmax(0,1fr)]"
+        className="mx-auto grid w-full max-w-[1040px] grid-cols-1 items-start gap-3 p-4 md:gap-4 lg:grid-cols-[280px_minmax(0,1fr)]"
         onSubmit={(e) => {
           e.preventDefault();
           save();
@@ -164,20 +174,21 @@ export function PersonalDetailsPage() {
       >
         {/* Summary */}
         <Card className="lg:sticky lg:top-[84px]">
-          <div className="flex flex-col items-center gap-3 px-4 pt-6 pb-5 text-center">
-            <span className="flex size-16 items-center justify-center rounded-[18px] bg-brand-tint">
-              <span className="font-inter text-[22px] leading-none font-semibold tracking-[-0.33px] text-brand">
+          {/* Below lg the summary is a compact horizontal header; the sidebar card from lg. */}
+          <div className="flex items-center gap-3.5 p-4 lg:flex-col lg:gap-3 lg:px-4 lg:pt-6 lg:pb-5 lg:text-center">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-[16px] bg-brand-tint lg:size-16 lg:rounded-[18px]">
+              <span className="font-inter text-[20px] leading-none font-semibold tracking-[-0.3px] text-brand lg:text-[22px] lg:tracking-[-0.33px]">
                 {draft.initials.toUpperCase() || "?"}
               </span>
             </span>
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
               <p className="t-16 text-fg">{draft.name || "Your name"}</p>
               <p className="t-14 text-fg-2">
                 {[draft.jobTitle, draft.department].filter(Boolean).join(" · ") || "Add a job title"}
               </p>
             </div>
           </div>
-          <ul className="grid gap-3 border-t border-subtle px-4 py-4">
+          <ul className="grid gap-x-4 gap-y-3 border-t border-subtle px-4 py-4 sm:grid-cols-2 lg:grid-cols-1">
             <SummaryRow icon={<MailIcon />}>{draft.email || "—"}</SummaryRow>
             <SummaryRow icon={<PhoneIcon />}>{draft.phone || "—"}</SummaryRow>
             <SummaryRow icon={<MapPinIcon />}>{draft.location || "—"}</SummaryRow>
@@ -193,7 +204,7 @@ export function PersonalDetailsPage() {
 
         <div className="grid min-w-0 gap-4">
           <Section title="Basic information" description="How you appear across the workspace">
-            <div className="grid grid-cols-[minmax(0,1fr)_120px] items-start gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_120px] sm:gap-4">
               <Field label="Full name" htmlFor="pd-name" error={err("name")}>
                 {input("name", { autoComplete: "name", required: true })}
               </Field>
@@ -209,12 +220,12 @@ export function PersonalDetailsPage() {
               <button
                 type="button"
                 onClick={() => set("initials", initialsFrom(draft.name))}
-                className="t-12 -mt-2 w-fit text-brand outline-none hover-fine:text-brand-strong focus-visible:underline"
+                className="t-12 -mt-2 w-fit text-brand outline-none hover-fine:text-brand-strong focus-visible:underline max-md:-my-1 max-md:py-1.5"
               >
                 Use “{initialsFrom(draft.name)}” from your name
               </button>
             ) : null}
-            <div className="grid grid-cols-2 items-start gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
               <Field label="Email" htmlFor="pd-email" error={err("email")}>
                 {input("email", { type: "email", autoComplete: "email", required: true })}
               </Field>
@@ -225,7 +236,7 @@ export function PersonalDetailsPage() {
           </Section>
 
           <Section title="Work" description="Your role and reporting line">
-            <div className="grid grid-cols-2 items-start gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
               <Field label="Job title" htmlFor="pd-jobTitle">
                 {input("jobTitle", { autoComplete: "organization-title" })}
               </Field>
@@ -245,14 +256,14 @@ export function PersonalDetailsPage() {
           </Section>
 
           <Section title="Personal" description="Only visible to People Ops">
-            <div className="grid grid-cols-2 items-start gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
               <Field label="Birthday" htmlFor="pd-birthday" error={err("birthday")}>
                 {input("birthday", { type: "date", max: today })}
               </Field>
               <Field label="Emergency contact" htmlFor="pd-emergencyContact" hint="Name and phone number">
                 {input("emergencyContact", { placeholder: "Name · phone" })}
               </Field>
-              <Field label="Home address" htmlFor="pd-address" className="col-span-2">
+              <Field label="Home address" htmlFor="pd-address" className="sm:col-span-2">
                 {input("address", { autoComplete: "street-address" })}
               </Field>
             </div>
@@ -271,6 +282,7 @@ export function PersonalDetailsPage() {
             >
               <Textarea
                 id="pd-bio"
+                className="max-md:text-[16px]"
                 rows={3}
                 value={draft.bio}
                 onChange={(e) => set("bio", e.target.value)}
@@ -281,6 +293,18 @@ export function PersonalDetailsPage() {
           </Section>
         </div>
       </form>
+
+      {/* Phones: unsaved edits surface a save bar pinned above the home indicator. */}
+      {dirty ? (
+        <div className="sticky bottom-0 z-10 mt-auto flex gap-2 border-t border-hairline bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] duration-200 ease-(--ease-out) animate-in fade-in-0 slide-in-from-bottom-4 md:hidden">
+          <Button className="h-10 px-3.5" onClick={reset}>
+            <RotateCcwIcon className="text-icon" /> Reset
+          </Button>
+          <Button type="submit" form="profile-form" variant="brand" className="h-10 flex-1">
+            Save {changed.length === 1 ? "change" : `${changed.length} changes`}
+          </Button>
+        </div>
+      ) : null}
     </PageRoot>
   );
 }
