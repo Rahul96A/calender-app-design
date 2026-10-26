@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CheckIcon, CopyIcon, EyeIcon, PencilIcon, PlusIcon, ReceiptIcon, SendIcon, Trash2Icon, XIcon } from "lucide-react";
 import { toast } from "sonner";
+import { FilterMenu } from "@/components/filter-menu";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,56 +67,84 @@ export function InvoicePage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-thin bg-app">
-      <header className="sticky top-0 z-10 flex h-[68px] shrink-0 items-center gap-3 border-b border-hairline bg-surface px-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <h2 className="t-16 text-fg">Invoices</h2>
-          <p className="t-14 truncate text-fg-2">
-            {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"} · {formatTotals(stats.outstanding)} outstanding
-          </p>
+      {/* Phones: title + New on the first row, search + Filters on the second; the header scrolls away */}
+      <header className="z-10 flex shrink-0 flex-col gap-3 border-b border-hairline bg-surface px-4 py-3 md:sticky md:top-0 md:h-[68px] md:flex-row md:items-center md:py-0">
+        <div className="flex min-w-0 items-center gap-3 md:flex-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <h2 className="t-16 text-fg">Invoices</h2>
+            <p className="t-14 truncate text-fg-2">
+              {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"} · {formatTotals(stats.outstanding)} outstanding
+            </p>
+          </div>
+          <Button variant="brand" size="icon" className="size-10 md:hidden" aria-label="New invoice" onClick={() => edit()}>
+            <PlusIcon className="size-4" />
+          </Button>
         </div>
-        <label className="flex h-[30px] w-56 items-center gap-2 rounded-lg border border-control bg-surface px-2.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand/60 focus-within:ring-3 focus-within:ring-brand/15">
-          <Icon name="search" />
-          <input
-            type="search"
-            placeholder="Search number or client"
-            aria-label="Search invoices"
-            className="t-14 min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-placeholder [&::-webkit-search-cancel-button]:hidden"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              className="-mr-1 rounded p-0.5 text-icon hover-fine:text-fg"
-              onClick={() => setQuery("")}
-            >
-              <XIcon className="size-3.5" />
-            </button>
-          )}
-        </label>
-        <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-          <SelectTrigger size="sm" className="h-[30px] w-[132px]" aria-label="Filter by status">
-            <Icon name="filter" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent position="popper" align="end">
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="h-4 w-px bg-hairline" aria-hidden />
-        <Button variant="brand" onClick={() => edit()}>
-          <PlusIcon /> New invoice
-        </Button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-control bg-surface px-2.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand/60 focus-within:ring-3 focus-within:ring-brand/15 md:h-[30px] md:w-56 md:flex-none">
+            <Icon name="search" />
+            <input
+              type="search"
+              placeholder="Search number or client"
+              aria-label="Search invoices"
+              className="t-14 min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-placeholder max-md:text-[16px] [&::-webkit-search-cancel-button]:hidden"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                className="-mr-1 rounded p-0.5 text-icon hover-fine:text-fg max-md:-mr-2 max-md:p-2"
+                onClick={() => setQuery("")}
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            )}
+          </label>
+          <div className="md:hidden">
+            <FilterMenu
+              className="h-10"
+              groups={[
+                {
+                  id: "status",
+                  label: "Status",
+                  type: "single",
+                  options: [
+                    { value: "all", label: "All statuses" },
+                    ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+                  ],
+                  value: status,
+                  onChange: (v) => setStatus(v as StatusFilter),
+                },
+              ]}
+              activeCount={status === "all" ? 0 : 1}
+              onReset={() => setStatus("all")}
+            />
+          </div>
+          <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <SelectTrigger size="sm" className="h-[30px] w-[132px] max-md:hidden" aria-label="Filter by status">
+              <Icon name="filter" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              <SelectItem value="all">All statuses</SelectItem>
+              {STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_LABELS[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="h-4 w-px bg-hairline max-md:hidden" aria-hidden />
+          <Button variant="brand" className="max-md:hidden" onClick={() => edit()}>
+            <PlusIcon /> New invoice
+          </Button>
+        </div>
       </header>
 
       <div className="flex flex-col gap-4 p-4">
-        <div className="grid grid-cols-4 overflow-hidden rounded-xl border border-hairline bg-surface">
+        <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-hairline bg-surface md:grid-cols-4">
           <Stat label="Outstanding" value={formatTotals(stats.outstanding)} count={stats.outstanding.length} />
           <Stat
             label="Overdue"
@@ -156,64 +185,93 @@ export function InvoicePage() {
               )}
             </div>
           ) : (
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col className="w-[160px]" />
-                <col />
-                <col className="w-[120px]" />
-                <col className="w-[120px]" />
-                <col className="w-[150px]" />
-                <col className="w-[120px]" />
-                <col className="w-[56px]" />
-              </colgroup>
-              <thead>
-                <tr className="h-10 bg-app text-left">
-                  <th className="t-14 px-4 font-medium text-fg-2">Number</th>
-                  <th className="t-14 px-2 font-medium text-fg-2">Client</th>
-                  <th className="t-14 px-2 font-medium text-fg-2">Issued</th>
-                  <th className="t-14 px-2 font-medium text-fg-2">Due</th>
-                  <th className="t-14 px-2 text-right font-medium text-fg-2">Amount</th>
-                  <th className="t-14 px-4 font-medium text-fg-2">Status</th>
-                  <th className="pr-3">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Phones: a tappable list instead of the seven-column table */}
+              <ul className="md:hidden">
                 {visible.map(({ inv, status: st, total }) => (
-                  <tr
-                    key={inv.id}
-                    onClick={() => view(inv.id)}
-                    className="h-14 cursor-pointer border-b border-subtle transition-colors duration-150 last:border-b-0 hover-fine:bg-hover/50"
-                  >
-                    <td className="px-4">
-                      <button
-                        type="button"
-                        className="t-14 rounded text-table outline-none focus-visible:ring-3 focus-visible:ring-brand/15"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          view(inv.id);
-                        }}
-                      >
-                        {inv.number}
-                      </button>
-                    </td>
-                    <td className="t-14 truncate px-2 text-table">{inv.client}</td>
-                    <td className="t-14 px-2 text-table">{formatShort(inv.issueDate)}, {inv.issueDate.slice(0, 4)}</td>
-                    <td className={cn("t-14 px-2", st === "overdue" ? "text-danger" : "text-table")}>
-                      {formatShort(inv.dueDate)}, {inv.dueDate.slice(0, 4)}
-                    </td>
-                    <td className="t-14 px-2 text-right text-table tabular-nums">{formatMoney(total, inv.currency)}</td>
-                    <td className="px-4">
-                      <InvoiceStatusBadge status={st} />
-                    </td>
-                    <td className="pr-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <RowMenu invoice={inv} today={today} />
-                    </td>
-                  </tr>
+                  <li key={inv.id} className="flex items-center border-b border-subtle last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => view(inv.id)}
+                      className="flex min-h-16 min-w-0 flex-1 flex-col gap-2 py-3 pl-4 text-left outline-none focus-visible:bg-hover"
+                    >
+                      <span className="flex w-full items-center gap-3">
+                        <span className="t-14 min-w-0 flex-1 truncate text-fg">{inv.client}</span>
+                        <span className="t-14 shrink-0 text-table tabular-nums">{formatMoney(total, inv.currency)}</span>
+                      </span>
+                      <span className="flex w-full items-center gap-3">
+                        <span className="t-12 min-w-0 flex-1 truncate text-fg-2">
+                          {inv.number} ·{" "}
+                          <span className={cn(st === "overdue" && "text-danger")}>Due {formatShort(inv.dueDate)}</span>
+                        </span>
+                        <InvoiceStatusBadge status={st} />
+                      </span>
+                    </button>
+                    <div className="px-1.5">
+                      <RowMenu invoice={inv} today={today} triggerClassName="size-10" />
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+              <table className="w-full table-fixed border-collapse max-md:hidden">
+                <colgroup>
+                  <col className="w-[160px]" />
+                  <col />
+                  <col className="w-[120px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[56px]" />
+                </colgroup>
+                <thead>
+                  <tr className="h-10 bg-app text-left">
+                    <th className="t-14 px-4 font-medium text-fg-2">Number</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">Client</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">Issued</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">Due</th>
+                    <th className="t-14 px-2 text-right font-medium text-fg-2">Amount</th>
+                    <th className="t-14 px-4 font-medium text-fg-2">Status</th>
+                    <th className="pr-3">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map(({ inv, status: st, total }) => (
+                    <tr
+                      key={inv.id}
+                      onClick={() => view(inv.id)}
+                      className="h-14 cursor-pointer border-b border-subtle transition-colors duration-150 last:border-b-0 hover-fine:bg-hover/50"
+                    >
+                      <td className="px-4">
+                        <button
+                          type="button"
+                          className="t-14 rounded text-table outline-none focus-visible:ring-3 focus-visible:ring-brand/15"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            view(inv.id);
+                          }}
+                        >
+                          {inv.number}
+                        </button>
+                      </td>
+                      <td className="t-14 truncate px-2 text-table">{inv.client}</td>
+                      <td className="t-14 px-2 text-table">{formatShort(inv.issueDate)}, {inv.issueDate.slice(0, 4)}</td>
+                      <td className={cn("t-14 px-2", st === "overdue" ? "text-danger" : "text-table")}>
+                        {formatShort(inv.dueDate)}, {inv.dueDate.slice(0, 4)}
+                      </td>
+                      <td className="t-14 px-2 text-right text-table tabular-nums">{formatMoney(total, inv.currency)}</td>
+                      <td className="px-4">
+                        <InvoiceStatusBadge status={st} />
+                      </td>
+                      <td className="pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <RowMenu invoice={inv} today={today} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </section>
       </div>
@@ -253,7 +311,8 @@ function Stat({
       </span>
     </>
   );
-  const base = "flex min-w-0 flex-col gap-2.5 border-r border-hairline px-4 py-3.5 text-left last:border-r-0";
+  const base =
+    "flex min-w-0 flex-col gap-2.5 border-hairline px-4 py-3.5 text-left max-md:odd:border-r max-md:nth-[-n+2]:border-b md:border-r md:last:border-r-0";
   if (!onClick) return <div className={base}>{body}</div>;
   return (
     <button
@@ -267,7 +326,7 @@ function Stat({
   );
 }
 
-function RowMenu({ invoice, today }: { invoice: Invoice; today: string }) {
+function RowMenu({ invoice, today, triggerClassName }: { invoice: Invoice; today: string; triggerClassName?: string }) {
   const invoices = useAppStore((s) => s.invoices);
   const saveInvoice = useAppStore((s) => s.saveInvoice);
   const setInvoiceStatus = useAppStore((s) => s.setInvoiceStatus);
@@ -302,11 +361,11 @@ function RowMenu({ invoice, today }: { invoice: Invoice; today: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${invoice.number}`}>
+        <Button variant="ghost" size="icon-sm" className={triggerClassName} aria-label={`Actions for ${invoice.number}`}>
           <Icon name="more" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48 max-md:[&_[role^=menuitem]]:min-h-10">
         <DropdownMenuItem onSelect={() => view(invoice.id)}>
           <EyeIcon /> View
         </DropdownMenuItem>

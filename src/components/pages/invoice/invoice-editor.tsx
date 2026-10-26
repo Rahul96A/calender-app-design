@@ -31,7 +31,7 @@ export function InvoiceEditor() {
   const closeEditor = useInvoiceUi((s) => s.closeEditor);
   return (
     <Dialog open={editor.open} onOpenChange={(v) => !v && closeEditor()}>
-      <DialogContent className="max-h-[calc(100dvh-48px)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0 sm:max-w-[720px]">
+      <DialogContent className="max-h-[calc(100dvh-48px)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0 max-sm:overflow-hidden max-sm:pb-0 sm:max-w-[720px]">
         <EditorForm key={editor.session} invoiceId={editor.id} onDone={closeEditor} />
       </DialogContent>
     </Dialog>
@@ -129,16 +129,17 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
         save(existing ? existing.status : "draft");
       }}
     >
-      <DialogHeader className="gap-1.5 border-b border-hairline px-5 pt-5 pb-4">
+      <DialogHeader className="gap-1.5 border-b border-hairline px-5 pt-5 pb-4 max-sm:px-4 max-sm:pr-12 max-sm:text-left">
         <DialogTitle className="t-16">{existing ? `Edit ${existing.number}` : "New invoice"}</DialogTitle>
         <DialogDescription className="t-14">
           {existing ? "Changes apply immediately to the invoice." : "Drafts stay private until you send them."}
         </DialogDescription>
       </DialogHeader>
 
-      <div className="grid content-start gap-5 overflow-y-auto scroll-thin px-5 py-5">
-        <div className="grid grid-cols-[1.4fr_1fr_120px] gap-3">
-          <Field label="Client" htmlFor="inv-client">
+      <div className="grid content-start gap-5 overflow-y-auto scroll-thin px-5 py-5 max-sm:px-4 max-sm:py-4">
+        {/* Phones: client on its own row, number + currency share the next */}
+        <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-3 max-sm:gap-y-4 sm:grid-cols-[1.4fr_1fr_120px]">
+          <Field label="Client" htmlFor="inv-client" className="max-sm:col-span-2">
             <Input
               id="inv-client"
               list="inv-clients"
@@ -177,7 +178,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
             </Select>
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
           <Field label="Issue date" htmlFor="inv-issue">
             <Input
               id="inv-issue"
@@ -214,8 +215,9 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
 
         <div className="grid gap-2">
           <span className="t-12 text-fg-2">Line items</span>
-          <div className="overflow-hidden rounded-lg border border-hairline">
-            <div className="grid h-8 grid-cols-[1fr_72px_104px_104px_36px] items-center gap-2 bg-app px-2">
+          {/* Phones: each line item is its own small card (description, then qty / rate / amount) */}
+          <div className="grid gap-2 sm:gap-0 sm:overflow-hidden sm:rounded-lg sm:border sm:border-hairline">
+            <div className="grid h-8 grid-cols-[1fr_72px_104px_104px_36px] items-center gap-2 bg-app px-2 max-sm:hidden">
               <span className="t-12 pl-0.5 text-fg-2">Description</span>
               <span className="t-12 text-right text-fg-2">Qty</span>
               <span className="t-12 text-right text-fg-2">Rate</span>
@@ -225,42 +227,53 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
             {draft.items.map((l, idx) => (
               <div
                 key={l.id}
-                className="grid grid-cols-[1fr_72px_104px_104px_36px] items-center gap-2 border-t border-subtle px-2 py-1.5"
+                className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-end gap-2 rounded-lg border border-hairline p-3 sm:grid-cols-[1fr_72px_104px_104px_36px] sm:items-center sm:rounded-none sm:border-0 sm:border-t sm:border-subtle sm:px-2 sm:py-1.5"
               >
                 <Input
                   aria-label={`Line ${idx + 1} description`}
                   placeholder="Service or product"
+                  className="max-sm:col-span-2 max-sm:row-start-1"
                   value={l.description}
                   onChange={(e) => setLine(l.id, { description: e.target.value })}
                 />
-                <Input
-                  aria-label={`Line ${idx + 1} quantity`}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  className="text-right tabular-nums"
-                  value={l.quantity}
-                  onChange={(e) => setLine(l.id, { quantity: e.target.value })}
-                />
-                <Input
-                  aria-label={`Line ${idx + 1} rate`}
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  placeholder="0.00"
-                  className="text-right tabular-nums"
-                  value={l.rate}
-                  onChange={(e) => setLine(l.id, { rate: e.target.value })}
-                />
-                <span className="t-14 truncate text-right text-table tabular-nums">
-                  {formatMoney(lineTotal({ quantity: Number(l.quantity), rate: Number(l.rate) }), draft.currency)}
+                <label className="grid gap-1.5">
+                  <span className="t-12 text-fg-2 sm:hidden">Qty</span>
+                  <Input
+                    aria-label={`Line ${idx + 1} quantity`}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    className="text-right tabular-nums"
+                    value={l.quantity}
+                    onChange={(e) => setLine(l.id, { quantity: e.target.value })}
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="t-12 text-fg-2 sm:hidden">Rate</span>
+                  <Input
+                    aria-label={`Line ${idx + 1} rate`}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    placeholder="0.00"
+                    className="text-right tabular-nums"
+                    value={l.rate}
+                    onChange={(e) => setLine(l.id, { rate: e.target.value })}
+                  />
+                </label>
+                <span className="grid min-w-0 gap-1.5 text-right max-sm:min-w-[88px]">
+                  <span className="t-12 text-fg-2 sm:hidden">Amount</span>
+                  <span className="t-14 truncate text-table tabular-nums max-sm:flex max-sm:h-8 max-sm:items-center max-sm:justify-end">
+                    {formatMoney(lineTotal({ quantity: Number(l.quantity), rate: Number(l.rate) }), draft.currency)}
+                  </span>
                 </span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
+                  className="max-sm:col-start-3 max-sm:row-start-1 max-sm:size-8 max-sm:justify-self-end"
                   aria-label={`Remove line ${idx + 1}`}
                   disabled={draft.items.length === 1}
                   onClick={() => set("items", draft.items.filter((x) => x.id !== l.id))}
@@ -269,11 +282,16 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                 </Button>
               </div>
             ))}
-            <div className="flex items-center justify-between border-t border-subtle bg-app px-2 py-2">
-              <Button type="button" size="sm" onClick={() => set("items", [...draft.items, blankLine()])}>
+            <div className="flex items-center justify-between gap-3 max-sm:items-start max-sm:pt-1 sm:border-t sm:border-subtle sm:bg-app sm:px-2 sm:py-2">
+              <Button
+                type="button"
+                size="sm"
+                className="max-sm:h-10 max-sm:px-3"
+                onClick={() => set("items", [...draft.items, blankLine()])}
+              >
                 <PlusIcon /> Add line
               </Button>
-              <dl className="grid grid-cols-[auto_120px] items-center gap-x-4 gap-y-2 pr-[44px]">
+              <dl className="grid grid-cols-[auto_minmax(0,120px)] items-center gap-x-4 gap-y-2 sm:pr-[44px]">
                 <dt className="t-12 text-right text-fg-2">Subtotal</dt>
                 <dd className="t-14 text-right text-table tabular-nums">{formatMoney(total, draft.currency)}</dd>
                 <dt className="t-14 text-right text-fg">Total</dt>
@@ -294,13 +312,14 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
         </Field>
       </div>
 
-      <DialogFooter className="m-0 items-center rounded-b-xl border-t border-hairline bg-app px-5 py-3">
+      <DialogFooter className="m-0 rounded-b-xl border-t border-hairline bg-app px-5 py-3 max-sm:rounded-none max-sm:px-4 max-sm:pb-[max(12px,env(safe-area-inset-bottom))] max-sm:flex-row max-sm:flex-wrap max-sm:[&_button]:h-10 max-sm:[&_button]:flex-1 sm:items-center">
         {touched && error ? (
-          <p className="t-12 mr-auto text-danger" role="alert">
+          <p className="t-12 mr-auto leading-[1.3] text-danger max-sm:basis-full" role="alert">
             {error}
           </p>
         ) : null}
-        <Button type="button" onClick={onDone}>
+        {/* Phones close the sheet with its X or a swipe; the footer keeps just the save actions */}
+        <Button type="button" className="max-sm:hidden" onClick={onDone}>
           Cancel
         </Button>
         {existing ? (
