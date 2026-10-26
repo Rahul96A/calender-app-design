@@ -278,14 +278,11 @@
   font-feature-settings: "salt" 1;
 }
 
-/* Pressable feedback — every button should feel like it heard you */
+/* Pressable elements: smooth colour/opacity changes only — no scale "bounce". */
 @utility press {
-  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-property: background-color, border-color, color, box-shadow, opacity;
   transition-duration: 160ms;
   transition-timing-function: var(--ease-out);
-  &:active:not(:disabled) {
-    transform: scale(0.97);
-  }
 }
 
 /* Accent surface: the Figma gradient bitmap + 1px ring + top highlight */

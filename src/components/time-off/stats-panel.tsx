@@ -105,7 +105,7 @@ export function StatsPanel({ onShowPending }: { onShowPending: () => void }) {
             className="group relative flex w-full shrink-0 items-center gap-3 py-4 pr-2 text-left outline-none before:absolute before:-inset-x-2 before:inset-y-1.5 before:rounded-lg before:transition-colors before:duration-150 hover-fine:before:bg-hover focus-visible:before:ring-2 focus-visible:before:ring-brand/40"
           >
             <span
-              className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[10px] transition-transform duration-150 ease-(--ease-out) group-active:scale-[0.96]"
+              className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[10px]"
               style={{ background: stat.tint }}
             >
               <Image src={`/icons/${stat.icon}.svg`} alt="" width={20} height={20} unoptimized />
