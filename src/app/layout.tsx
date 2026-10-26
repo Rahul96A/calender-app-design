@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "/",
-    siteName: "Kargul Calender design prototype",
+    siteName: "Kargul Calender Design Prototype",
     title: "Kargul Workspace — Time off & calendar",
     description: DESCRIPTION,
     locale: "en_US",
