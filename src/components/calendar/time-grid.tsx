@@ -10,6 +10,7 @@ import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
 import { AllDayRow } from "./all-day-row";
 import { eventStyle } from "./event-colors";
+import { TwoLineTitle } from "./two-line-title";
 import {
   clamp,
   HOUR_HEIGHT,
@@ -387,9 +388,11 @@ function EventBlock({
         </p>
       ) : (
         <>
-          <p className={cn("t-14 salt w-full shrink-0 overflow-hidden break-words", height >= 60 ? "line-clamp-2" : "line-clamp-1")}>
-            {event.title}
-          </p>
+          {height >= 60 ? (
+            <TwoLineTitle text={event.title} className="t-14 salt w-full shrink-0 overflow-hidden" />
+          ) : (
+            <p className="t-14 salt w-full shrink-0 truncate">{event.title}</p>
+          )}
           <p className="t-12 salt w-full shrink-0 truncate">{time}</p>
           {event.note && <p className="t-12 salt w-full shrink-0 truncate">{event.note}</p>}
         </>
