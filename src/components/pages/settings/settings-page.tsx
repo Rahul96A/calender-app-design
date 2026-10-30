@@ -9,6 +9,7 @@ import {
   CheckIcon,
   DatabaseIcon,
   DownloadIcon,
+  EraserIcon,
   MinusIcon,
   PaletteIcon,
   PlusIcon,
@@ -527,6 +528,8 @@ function DataTab() {
   const today = useToday();
   const counts = useAppStore(selectCountsLabel);
   const resetDemoData = useAppStore((s) => s.resetDemoData);
+  const startFresh = useAppStore((s) => s.startFresh);
+  const account = useGoogleStore((s) => s.account);
 
   const exportJson = () => {
     const state = useAppStore.getState();
@@ -552,6 +555,35 @@ function DataTab() {
         <Button onClick={exportJson} className={TOUCH_CONTROL}>
           <DownloadIcon className="text-icon" /> Export JSON
         </Button>
+      </Row>
+      <Row
+        title="Start fresh"
+        description="Remove the sample events, requests, documents and profile so only your own data is left. Holidays and settings stay."
+        stack
+      >
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button className={TOUCH_CONTROL}>
+              <EraserIcon className="text-icon" /> Start fresh
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="t-16">Clear the sample data?</AlertDialogTitle>
+              <AlertDialogDescription className="t-14 leading-[1.4]">
+                Events, requests, documents, time entries, invoices, payout methods and benefits saved in this browser
+                are removed, and your profile is emptied{account ? ` and set to ${account}` : ""}. Google Calendar events
+                aren&apos;t touched.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="max-sm:h-10">Cancel</AlertDialogCancel>
+              <AlertDialogAction className="max-sm:h-10" onClick={() => startFresh(account ?? undefined)}>
+                Clear sample data
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Row>
       <Row
         title="Reset demo data"

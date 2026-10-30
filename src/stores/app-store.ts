@@ -86,7 +86,12 @@ type Actions = {
   updateBenefit: (id: string, patch: Partial<Benefit>) => void;
   // misc
   resetDemoData: () => void;
+  /** Clears the sample records so the app holds only your own data. */
+  startFresh: (email?: string) => void;
 };
+
+/** True while the profile is still the seed's sample person. */
+export const isSampleProfile = (s: AppState) => s.profile.email === createSeed().profile.email;
 
 export type AppStore = AppState & Actions;
 
@@ -492,6 +497,37 @@ export const useAppStore = create<AppStore>()(
       resetDemoData: () => {
         set(createSeed());
         toast.success("Demo data restored");
+      },
+      // Keeps workspaces, holidays and settings; everything personal starts empty.
+      startFresh: (email) => {
+        const name = email?.split("@")[0] || "Me";
+        set({
+          events: [],
+          requests: [],
+          notifications: [],
+          documents: [],
+          timeEntries: [],
+          timer: { running: false, startedAt: null, project: "", task: "" },
+          invoices: [],
+          withdrawalMethods: [],
+          benefits: [],
+          profile: {
+            name,
+            email: email ?? "",
+            initials: name.slice(0, 2).toUpperCase(),
+            phone: "",
+            jobTitle: "",
+            department: "",
+            manager: "",
+            location: "",
+            startDate: "",
+            birthday: "",
+            address: "",
+            emergencyContact: "",
+            bio: "",
+          },
+        });
+        toast.success("Sample data cleared", { action: { label: "Undo", onClick: () => undo() } });
       },
     };
     },
