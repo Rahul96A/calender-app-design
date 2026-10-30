@@ -5,12 +5,14 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   BellIcon,
   CalendarDaysIcon,
+  CalendarSyncIcon,
   CheckIcon,
   DatabaseIcon,
   DownloadIcon,
   MinusIcon,
   PaletteIcon,
   PlusIcon,
+  RefreshCwIcon,
   RotateCcwIcon,
   SlidersHorizontalIcon,
 } from "lucide-react";
@@ -37,6 +39,7 @@ import type { Settings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
+import { useGoogleStore } from "@/stores/google-store";
 import { openOverlay } from "@/stores/overlay-store";
 import { Card, PageHeader, PageRoot } from "@/components/pages/shared/page-chrome";
 
@@ -44,6 +47,7 @@ const TABS = [
   { value: "general", label: "General", icon: SlidersHorizontalIcon },
   { value: "time-off", label: "Time off", icon: CalendarDaysIcon },
   { value: "notifications", label: "Notifications", icon: BellIcon },
+  { value: "connections", label: "Connections", icon: CalendarSyncIcon },
   { value: "appearance", label: "Appearance", icon: PaletteIcon },
   { value: "data", label: "Data", icon: DatabaseIcon },
 ] as const;
@@ -104,6 +108,9 @@ export function SettingsPage() {
           </TabsContent>
           <TabsContent value="notifications">
             <NotificationsTab />
+          </TabsContent>
+          <TabsContent value="connections">
+            <ConnectionsTab />
           </TabsContent>
           <TabsContent value="appearance">
             <AppearanceTab />
@@ -170,6 +177,64 @@ function Row({
         {children}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ connections */
+
+function ConnectionsTab() {
+  const status = useGoogleStore((s) => s.status);
+  const account = useGoogleStore((s) => s.account);
+  const syncing = useGoogleStore((s) => s.syncing);
+  const { connect, disconnect, refresh } = useGoogleStore.getState();
+
+  const description =
+    status === "unavailable" ? (
+      <>
+        Set <code className="font-mono">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to turn this on — see the README.
+      </>
+    ) : status === "connected" ? (
+      `${account ?? "Connected"} · ${syncing ? "Syncing…" : "Up to date"}`
+    ) : status === "expired" ? (
+      `${account ? `${account} · ` : ""}Sign in again to keep syncing`
+    ) : (
+      "Show and edit the events in your Gmail account’s primary calendar"
+    );
+
+  return (
+    <Panel
+      title="Connections"
+      description="Sync with Google Calendar. New events you create here are added to Google while connected."
+    >
+      <Row title="Google Calendar" description={description} stack>
+        {status === "connected" ? (
+          <>
+            <Button onClick={() => void refresh()} disabled={syncing} className={TOUCH_CONTROL}>
+              <RefreshCwIcon className={cn("text-icon", syncing && "animate-spin")} /> Sync now
+            </Button>
+            <Button variant="destructive" onClick={disconnect} className={TOUCH_CONTROL}>
+              Disconnect
+            </Button>
+          </>
+        ) : (
+          <>
+            {status === "expired" && (
+              <Button onClick={disconnect} className={TOUCH_CONTROL}>
+                Forget account
+              </Button>
+            )}
+            <Button
+              variant="brand"
+              onClick={() => void connect()}
+              disabled={status === "unavailable" || status === "connecting"}
+              className={TOUCH_CONTROL}
+            >
+              {status === "connecting" ? "Connecting…" : status === "expired" ? "Reconnect" : "Connect"}
+            </Button>
+          </>
+        )}
+      </Row>
+    </Panel>
   );
 }
 
